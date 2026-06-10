@@ -1,0 +1,142 @@
+════════════════════════════════════════════════════════════
+    GOOGLE FORMS QUESTIONS - Copy & Paste Each Question
+════════════════════════════════════════════════════════════
+
+TITLE: Kapita Business Tracking Survey
+
+DESCRIPTION:
+Help us build better business tools! This 2-minute survey helps us understand how small businesses track sales, inventory, and finances. Your input shapes our product.
+
+────────────────────────────────────────────────────────────
+
+QUESTION 1 (Multiple choice - Required)
+Title: What do you currently use for business record-keeping?
+
+Options:
+○ Pen and paper / Exercise book
+○ Excel or Google Sheets
+○ WhatsApp or phone notes
+○ Accounting software (QuickBooks, Sage, etc.)
+○ Point of Sale (POS) system
+○ Nothing / I don't track regularly
+○ Other
+
+────────────────────────────────────────────────────────────
+
+QUESTION 2 (Multiple choice - Required)
+Title: What's your BIGGEST challenge with tracking your business?
+
+Options:
+○ Too time-consuming
+○ Don't know what to track
+○ Losing receipts or records
+○ Can't see profit clearly
+○ Hard to track credit customers
+○ Existing tools too expensive
+○ Existing tools too complicated
+○ Other
+
+────────────────────────────────────────────────────────────
+
+QUESTION 3 (Multiple choice - Required)
+Title: How often do you record sales and expenses?
+
+Options:
+○ Immediately after each transaction
+○ At the end of each day
+○ Once a week
+○ Once a month
+○ Rarely or inconsistently
+
+────────────────────────────────────────────────────────────
+
+QUESTION 4 (Checkboxes - Required - Max 3 selections)
+Title: What business information do you MOST need to see? (Select up to 3)
+
+Options:
+☐ Daily/monthly sales totals
+☐ Profit margins per product
+☐ Low stock alerts
+☐ Who owes me money (credits)
+☐ Expense breakdown by category
+☐ Cash flow status
+☐ Top selling products
+☐ Other
+
+────────────────────────────────────────────────────────────
+
+QUESTION 5 (Multiple choice - Required)
+Title: What would you pay MONTHLY for a tool that tracks sales, inventory, customers, profit, and generates reports?
+
+Options:
+○ Free only - won't pay
+○ Up to K20/month (~$1 USD)
+○ K20-50/month (~$1-2 USD)
+○ K50-100/month (~$2-4 USD)
+○ Over K100/month
+
+────────────────────────────────────────────────────────────
+
+QUESTION 6 (Multiple choice - Required)
+Title: What type of business do you run?
+
+Options:
+○ Retail shop
+○ Wholesale
+○ Restaurant / Food business
+○ Services (salon, repairs, etc.)
+○ Market vendor
+○ Online business
+○ Other
+
+────────────────────────────────────────────────────────────
+
+QUESTION 7 (Multiple choice - Required)
+Title: How many people work in your business?
+
+Options:
+○ Solo (just me)
+○ 2-5 people
+○ 6-20 people
+○ 20+ people
+
+────────────────────────────────────────────────────────────
+
+QUESTION 8 (Multiple choice - Required)
+Title: Would you be interested in early access to test Kapita?
+
+Options:
+○ Yes - I want to test the beta version
+○ Maybe - Show me more information first
+○ No - Not interested right now
+
+────────────────────────────────────────────────────────────
+
+QUESTION 9 (Short answer - Optional)
+Title: If interested in early access, what's your email?
+
+Description: We'll only contact you about Kapita beta access.
+
+────────────────────────────────────────────────────────────
+
+THANK YOU MESSAGE:
+Thank you for your feedback! 🙏
+
+Your input helps us build tools that solve real business problems. If you provided your email, we'll be in touch about early access to Kapita.
+
+Follow our progress:
+Website: [your-website]
+Twitter: @kapitaapp
+Email: hello@kapita.app
+
+════════════════════════════════════════════════════════════
+
+TIPS:
+• Keep form under 2 minutes to complete
+• Make Questions 1-8 required
+• Make email optional (Question 9)
+• Enable "Limit to 1 response" to prevent duplicates
+• Share via WhatsApp, Facebook, Twitter
+• Offer small incentive (discount code) for completion
+
+════════════════════════════════════════════════════════════

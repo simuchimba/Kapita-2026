@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kapita Beta Waitlist</title>
+    <meta
+      name="description"
+      content="Join the Kapita beta waitlist and get early access to smart business tracking for African entrepreneurs."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="floating-nav-shell">
+        <div class="floating-nav-glow" aria-hidden="true"></div>
+        <nav class="floating-nav-inner">
+          <a href="#" class="brand" aria-label="Kapita home">
+            <img
+              src="./assets/logo1.png"
+              alt="Kapita Logo"
+              class="brand-logo"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <span class="brand-fallback">K</span>
+            <span class="brand-name">Kapita</span>
+          </a>
+          <div class="nav-links">
+            <a href="#benefits">Benefits</a>
+            <a href="#how">How It Works</a>
+          </div>
+          <a href="#waitlist" class="btn btn-nav">Join Beta</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="top">
+        <div class="hero-bg-grid" aria-hidden="true"></div>
+        <div class="hero-radial" aria-hidden="true"></div>
+
+        <div class="hero-content">
+          <div class="hero-left">
+            <p class="eyebrow">Private Beta</p>
+            <h1>Join the Kapita Beta Waitlist</h1>
+            <p class="hero-copy">
+              Get early access to the next release of Kapita and help shape the future of business tracking.
+              We are onboarding a limited number of founders, shop owners, and finance teams.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#waitlist">Reserve My Spot</a>
+              <a class="btn btn-secondary" href="#benefits">See Benefits</a>
+            </div>
+          </div>
+
+          <div class="hero-right">
+            <div class="preview-card">
+              <div class="preview-head">
+                <div class="dot-row"><span></span><span></span><span></span></div>
+                <div class="preview-line"></div>
+              </div>
+              <div class="preview-body">
+                <div class="preview-stats">
+                  <div class="pill">Live Dashboard</div>
+                  <div class="pill">Inventory Alerts</div>
+                  <div class="pill">AI Insights</div>
+                </div>
+                <div class="mini-chart" aria-hidden="true">
+                  <span style="height: 28%"></span>
+                  <span style="height: 36%"></span>
+                  <span style="height: 32%"></span>
+                  <span style="height: 48%"></span>
+                  <span style="height: 42%"></span>
+                  <span style="height: 56%"></span>
+                  <span style="height: 50%"></span>
+                  <span style="height: 62%"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="benefits" id="benefits">
+        <div class="container">
+          <h2>Why Join The Waitlist</h2>
+          <p>Beta members get direct access and influence over what ships next.</p>
+          <div class="grid-3">
+            <article class="card">
+              <h3>Early Access</h3>
+              <p>Use new features before public release and stay ahead of your competition.</p>
+            </article>
+            <article class="card">
+              <h3>Priority Support</h3>
+              <p>Get fast setup help and direct communication with the Kapita product team.</p>
+            </article>
+            <article class="card">
+              <h3>Feature Influence</h3>
+              <p>Your feedback helps shape the roadmap for reports, analytics, and workflows.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="waitlist" id="waitlist">
+        <div class="container waitlist-layout">
+          <div class="waitlist-copy">
+            <h2>Apply for Beta Access</h2>
+            <p>
+              Tell us about your business and we will send your beta invite by email.
+              Limited spots are available each week.
+            </p>
+            <ul>
+              <li>Fast onboarding in under 10 minutes</li>
+              <li>Designed for Zambian and African businesses</li>
+              <li>Built for desktop and mobile teams</li>
+            </ul>
+          </div>
+
+          <form id="waitlistForm" class="waitlist-form" novalidate>
+            <div class="field-row">
+              <label for="fullName">Full Name</label>
+              <input id="fullName" name="fullName" type="text" required />
+            </div>
+            <div class="field-row">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <div class="field-row">
+              <label for="businessName">Business Name</label>
+              <input id="businessName" name="businessName" type="text" required />
+            </div>
+            <div class="field-row split">
+              <div>
+                <label for="businessType">Business Type</label>
+                <select id="businessType" name="businessType" required>
+                  <option value="">Select</option>
+                  <option value="retail">Retail</option>
+                  <option value="wholesale">Wholesale</option>
+                  <option value="services">Services</option>
+                  <option value="restaurant">Restaurant</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="teamSize">Team Size</label>
+                <select id="teamSize" name="teamSize" required>
+                  <option value="">Select</option>
+                  <option value="1">Solo (1)</option>
+                  <option value="2-5">2-5</option>
+                  <option value="6-20">6-20</option>
+                  <option value="21+">21+</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row">
+              <label for="notes">What are you trying to improve?</label>
+              <textarea id="notes" name="notes" rows="4" placeholder="Tell us your goals"></textarea>
+            </div>
+
+            <label class="checkbox-row" for="consent">
+              <input id="consent" name="consent" type="checkbox" required />
+              <span>I agree to receive beta updates from Kapita.</span>
+            </label>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+              Join Beta Waitlist
+            </button>
+
+            <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="how" id="how">
+        <div class="container">
+          <h2>How It Works</h2>
+          <div class="grid-3">
+            <article class="card compact">
+              <strong>1. Join</strong>
+              <p>Submit your details in the waitlist form.</p>
+            </article>
+            <article class="card compact">
+              <strong>2. Review</strong>
+              <p>We prioritize fit and send invitations in batches.</p>
+            </article>
+            <article class="card compact">
+              <strong>3. Start</strong>
+              <p>Receive onboarding and begin testing immediately.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>© 2026 Kapita. Beta Program.</p>
+        <a href="#waitlist">Join Waitlist</a>
+      </div>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

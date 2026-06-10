@@ -1,0 +1,47 @@
+═══════════════════════════════════════════════════════════
+         ✅ REPORTLAB ISSUE FIXED - REDEPLOY NOW
+═══════════════════════════════════════════════════════════
+
+The build error has been resolved!
+
+🔧 WHAT WAS FIXED:
+  • Removed reportlab (caused build failure)
+  • Made PDF receipt generation optional
+  • All core features still work
+  • Frontend PDF reports still work perfectly
+
+
+🚀 REDEPLOY BACKEND NOW:
+
+cd /Users/lbs/kapita/backend
+npx vercel --prod
+
+
+📝 WHEN PROMPTED:
+  • Link to existing project? → Y (or N if first time)
+  • Select your backend project
+  • Wait for deployment to complete
+
+
+✅ AFTER DEPLOYMENT:
+
+1. Copy the backend URL
+2. Update frontend env var:
+   - Go to: https://vercel.com/dashboard
+   - Open frontend project
+   - Settings → Environment Variables
+   - Update: VITE_API_URL = https://your-backend.vercel.app/api
+   - Redeploy frontend
+
+3. Test:
+   - Visit frontend URL
+   - Login
+   - Check dashboard
+   - All features should work!
+
+
+═══════════════════════════════════════════════════════════
+
+For details, see: VERCEL_FIX.md
+
+DEPLOY NOW! 🎉

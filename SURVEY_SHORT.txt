@@ -1,0 +1,80 @@
+═══════════════════════════════════════════════════════════
+           KAPITA VALIDATION SURVEY (2 MIN)
+═══════════════════════════════════════════════════════════
+
+Help us understand your business tracking needs!
+
+───────────────────────────────────────────────────────────
+
+1. What do you use for record-keeping?
+   □ Pen and paper
+   □ Excel/Google Sheets
+   □ WhatsApp/Phone notes
+   □ Accounting software
+   □ POS system
+   □ Nothing
+   □ Other: __________
+
+───────────────────────────────────────────────────────────
+
+2. Biggest challenge tracking your business?
+   □ Too time-consuming
+   □ Don't know what to track
+   □ Losing records
+   □ Can't see profit
+   □ Hard to track who owes money
+   □ Tools too expensive
+   □ Tools too complicated
+
+───────────────────────────────────────────────────────────
+
+3. How often do you record transactions?
+   □ After each sale
+   □ End of day
+   □ Weekly
+   □ Monthly
+   □ Rarely
+
+───────────────────────────────────────────────────────────
+
+4. Most important to see? (Pick 3)
+   □ Daily/monthly sales
+   □ Profit margins
+   □ Low stock alerts
+   □ Who owes me (credits)
+   □ Expense breakdown
+   □ Cash flow
+   □ Top products
+
+───────────────────────────────────────────────────────────
+
+5. Would pay monthly for complete business tracking?
+   □ Free only
+   □ Up to K20 (~$1)
+   □ K20-50 (~$1-2)
+   □ K50-100 (~$2-4)
+   □ Over K100
+
+───────────────────────────────────────────────────────────
+
+6. Business type?
+   □ Retail  □ Wholesale  □ Restaurant  □ Services
+   □ Market vendor  □ Online  □ Other: ______
+
+───────────────────────────────────────────────────────────
+
+7. Team size?
+   □ Solo  □ 2-5  □ 6-20  □ 20+
+
+───────────────────────────────────────────────────────────
+
+8. Interested in early access?
+   □ Yes - want to test
+   □ Maybe - show me more
+   □ No
+
+   Email (optional): ________________
+
+═══════════════════════════════════════════════════════════
+                    Thank you! 🙏
+═══════════════════════════════════════════════════════════

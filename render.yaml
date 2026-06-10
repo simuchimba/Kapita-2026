@@ -1,0 +1,67 @@
+# Render Blueprint — Kapita Backend
+# Free tier: Backend on Render + Postgres on Neon (free)
+#
+# Before you begin:
+#   1. Create a free PostgreSQL database at https://neon.tech
+#   2. Copy the connection string from Neon (looks like postgresql://...)
+#   3. Deploy this blueprint, then set DATABASE_URL in Render Environment settings
+#   4. Set ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS, and CSRF_TRUSTED_ORIGINS
+#   5. After first deploy, go to Shell in Render and run: python manage.py create_admin
+#
+# Optional: Deploy frontend to Vercel with VITE_API_URL set to your Render API URL
+
+services:
+  - type: web
+    name: kapita-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    region: oregon  # Change to your preferred region!
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate --noinput
+    startCommand: gunicorn kapita.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --log-file -
+    healthCheckPath: /
+    numInstances: 1
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: RENDER
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+        description: "PostgreSQL connection string from Neon (postgresql://...)"
+      - key: JWT_ACCESS_TOKEN_LIFETIME
+        value: "60"
+        description: "Access token lifetime in minutes"
+      - key: JWT_REFRESH_TOKEN_LIFETIME
+        value: "1440"
+        description: "Refresh token lifetime in minutes (24 hours)"
+      - key: ALLOWED_HOSTS
+        sync: false
+        description: "Your Render domain (e.g., kapita-api.onrender.com)"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+        description: "Frontend URL (e.g., https://kapita-frontend.vercel.app)"
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+        description: "Same as CORS_ALLOWED_ORIGINS"
+      - key: OPENROUTER_API_KEY
+        sync: false
+        description: "Optional: OpenRouter API key for AI features"
+      - key: OPENROUTER_MODEL
+        sync: false
+        description: "Optional: OpenRouter model name"
+      - key: CLERK_SECRET_KEY
+        sync: false
+        description: "Optional: Clerk secret key for authentication"
+      - key: CLERK_AUTHORIZED_PARTIES
+        sync: false
+        description: "Optional: Frontend URL for Clerk"
