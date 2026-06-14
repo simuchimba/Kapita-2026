@@ -207,15 +207,28 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173,https://www.kapita.online,https://kapita.online'
-).split(',')
+# Always add the live domains (with and without www)
+def get_cors_origins():
+    base_origins = config(
+        'CORS_ALLOWED_ORIGINS',
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173'
+    ).split(',')
+    live_domains = ['https://www.kapita.online', 'https://kapita.online']
+    # Combine and deduplicate
+    return list(dict.fromkeys([origin.strip() for origin in base_origins + live_domains if origin.strip()]))
 
-CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173,https://www.kapita.online,https://kapita.online'
-).split(',')
+CORS_ALLOWED_ORIGINS = get_cors_origins()
+
+def get_csrf_origins():
+    base_origins = config(
+        'CSRF_TRUSTED_ORIGINS',
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173'
+    ).split(',')
+    live_domains = ['https://www.kapita.online', 'https://kapita.online']
+    # Combine and deduplicate
+    return list(dict.fromkeys([origin.strip() for origin in base_origins + live_domains if origin.strip()]))
+
+CSRF_TRUSTED_ORIGINS = get_csrf_origins()
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -233,14 +246,15 @@ CORS_ALLOW_HEADERS = [
 # Clerk auth (optional — when set, frontend uses Clerk and API accepts Clerk session tokens)
 CLERK_SECRET_KEY = config('CLERK_SECRET_KEY', default='')
 CLERK_JWT_KEY = config('CLERK_JWT_KEY', default='')
-CLERK_AUTHORIZED_PARTIES = [
-    origin.strip()
-    for origin in config(
+def get_clerk_authorized_parties():
+    base_parties = config(
         'CLERK_AUTHORIZED_PARTIES',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://www.kapita.online,https://kapita.online',
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
     ).split(',')
-    if origin.strip()
-]
+    live_domains = ['https://www.kapita.online', 'https://kapita.online']
+    return list(dict.fromkeys([origin.strip() for origin in base_parties + live_domains if origin.strip()]))
+
+CLERK_AUTHORIZED_PARTIES = get_clerk_authorized_parties()
 
 # OpenRouter / OpenAI-compatible AI (Mumu chat + analytics proxy)
 OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
