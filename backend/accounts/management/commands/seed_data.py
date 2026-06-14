@@ -267,7 +267,7 @@ class Command(BaseCommand):
                     num_payments = random.randint(1, 3)
                     remaining = amount_paid
                     for p in range(num_payments):
-                        pay_amount = random.randint(50, remaining) if p < num_payments - 1 else remaining
+                        pay_amount = random.randint(1, remaining) if p < num_payments - 1 else remaining
                         remaining -= pay_amount
                         CreditPayment.objects.create(
                             credit=credit,
