@@ -1,8 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuthStore } from './store/authStore'
-import { isClerkEnabled } from './config/auth'
-import ClerkAuthBridge from './components/ClerkAuthBridge'
 import { getPostAuthPath } from './utils/postAuthPath'
 import Layout from './components/Layout'
 import Loading from './components/Loading'
@@ -10,9 +8,11 @@ import PostAuthRedirect from './components/PostAuthRedirect'
 import Landing from './pages/Landing'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import VerifyEmail from './pages/auth/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Sales from './pages/Sales'
+import Quotations from './pages/Quotations'
 import Promotions from './pages/Promotions'
 import Suppliers from './pages/Suppliers'
 import PurchaseOrders from './pages/PurchaseOrders'
@@ -99,9 +99,7 @@ function App() {
   const { hydrateSession } = useAuthStore()
 
   useEffect(() => {
-    if (!isClerkEnabled) {
-      hydrateSession()
-    }
+    hydrateSession()
   }, [hydrateSession])
 
   const routes = (
@@ -126,6 +124,7 @@ function App() {
             </PublicAuthRoute>
           }
         />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route
           path="/admin/login"
           element={
@@ -169,6 +168,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="sales" element={<Sales />} />
+          <Route path="quotations" element={<Quotations />} />
           <Route path="promotions" element={<Promotions />} />
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="purchase-orders" element={<PurchaseOrders />} />
@@ -192,11 +192,7 @@ function App() {
     </>
   )
 
-  return (
-    <Router>
-      {isClerkEnabled ? <ClerkAuthBridge>{routes}</ClerkAuthBridge> : routes}
-    </Router>
-  )
+  return <Router>{routes}</Router>
 }
 
 export default App

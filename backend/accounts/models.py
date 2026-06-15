@@ -1,10 +1,12 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.crypto import get_random_string
+from django.utils.timezone import now
+from datetime import timedelta
 
 
 class User(AbstractUser):
     """Custom User model for Kapita"""
-    clerk_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     business_name = models.CharField(max_length=255, blank=True, null=True)
@@ -14,12 +16,25 @@ class User(AbstractUser):
         choices=[('light', 'Light'), ('dark', 'Dark')],
         default='light'
     )
+    # Company logo for receipts/quotations
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    # Email verification
+    email_verified = models.BooleanField(default=False)
+    email_verification_token = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    email_verification_token_expires_at = models.DateTimeField(blank=True, null=True)
     # Receipt / business details shown on customer PDF receipts
     address = models.TextField(blank=True, null=True)
     website = models.CharField(max_length=255, blank=True, null=True)
     tin = models.CharField(max_length=50, blank=True, null=True, verbose_name='TIN')
     vat_number = models.CharField(max_length=50, blank=True, null=True)
     business_registration_number = models.CharField(max_length=80, blank=True, null=True)
+    # Bank details for quotations
+    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_account_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_account_number = models.CharField(max_length=50, blank=True, null=True)
+    bank_sort_code = models.CharField(max_length=50, blank=True, null=True)
+    bank_iban = models.CharField(max_length=100, blank=True, null=True)
+    bank_swift = models.CharField(max_length=50, blank=True, null=True)
     receipt_tagline = models.CharField(
         max_length=255,
         blank=True,
@@ -42,3 +57,18 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+    def generate_email_verification_token(self):
+        """Generate a new email verification token that expires in 24 hours"""
+        self.email_verification_token = get_random_string(64)
+        self.email_verification_token_expires_at = now() + timedelta(hours=24)
+        self.save()
+        return self.email_verification_token
+
+    def is_email_verification_token_valid(self, token):
+        """Check if a verification token is valid"""
+        return (
+            self.email_verification_token == token and
+            self.email_verification_token_expires_at and
+            self.email_verification_token_expires_at > now()
+        )

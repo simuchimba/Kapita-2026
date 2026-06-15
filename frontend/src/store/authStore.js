@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { authAPI } from '../services/api'
-import { isClerkEnabled } from '../config/auth'
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -20,17 +19,14 @@ export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   loading: false,
-  sessionLoading: !isClerkEnabled && !!localStorage.getItem('access_token'),
+  sessionLoading: !!localStorage.getItem('access_token'),
   error: null,
-  clerkSignOut: null,
-
-  setClerkSignOut: (fn) => set({ clerkSignOut: fn }),
 
   login: async (credentials) => {
     // Clear any old tokens first
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    
+
     set({ loading: true, error: null })
     try {
       const response = await authAPI.login(credentials)
@@ -80,58 +76,13 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  logout: async (options = {}) => {
-    const { skipClerk = false } = options
-    const clerkSignOut = get().clerkSignOut
-
+  logout: async () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     set({ user: null, isAuthenticated: false, sessionLoading: false, error: null })
-
-    if (!skipClerk && clerkSignOut) {
-      await clerkSignOut()
-    }
   },
 
   hydrateSession: async () => {
-    if (isClerkEnabled) {
-      // Clerk session replaces any stale password login tokens.
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      set({ sessionLoading: true, error: null })
-
-      const maxAttempts = 3
-      let lastError = null
-
-      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        if (attempt > 0) {
-          await sleep(350 * attempt)
-        }
-
-        try {
-          const response = await authAPI.getProfile({ _clerkSkipCache: attempt > 0 })
-          set({
-            user: response.data,
-            isAuthenticated: true,
-            sessionLoading: false,
-            error: null,
-          })
-          return { success: true, user: response.data }
-        } catch (error) {
-          lastError = error
-        }
-      }
-
-      const message = profileErrorMessage(lastError)
-      set({
-        user: null,
-        isAuthenticated: false,
-        sessionLoading: false,
-        error: message,
-      })
-      return { success: false, error: message }
-    }
-
     const token = localStorage.getItem('access_token')
 
     if (!token) {

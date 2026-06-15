@@ -21,16 +21,17 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'phone', 'business_name', 'currency', 'theme',
+            'logo',
             'is_staff', 'is_superuser',
             'access_status', 'days_remaining', 'is_expired',
             'is_trial_active', 'is_subscription_active',
-            'created_at', 'updated_at',
+            'email_verified', 'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'is_staff', 'is_superuser',
             'access_status', 'days_remaining', 'is_expired',
             'is_trial_active', 'is_subscription_active',
-            'created_at', 'updated_at',
+            'email_verified', 'created_at', 'updated_at',
         ]
 
     def _summary(self, obj):
@@ -120,6 +121,13 @@ class ReceiptSettingsSerializer(serializers.ModelSerializer):
             'tin',
             'vat_number',
             'business_registration_number',
+            'logo',
+            'bank_name',
+            'bank_account_name',
+            'bank_account_number',
+            'bank_sort_code',
+            'bank_iban',
+            'bank_swift',
             'receipt_tagline',
             'receipt_thank_you',
             'receipt_return_policy',
