@@ -549,7 +549,7 @@ export default function Landing() {
             id="footer-legal"
             className="mt-10 border-t border-slate-200 pt-8 text-center text-sm text-slate-500"
           >
-            <p>&copy; 2026 Kapita. All rights reserved,being built by Wazingwa Mugala - Software Engineer</p>
+            <p>&copy; 2026 Kapita. All rights reserved, built by Wazingwa Mugala - Software Engineer, from Kitwe, Zambia</p>
           </div>
         </div>
       </footer>
