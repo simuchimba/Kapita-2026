@@ -39,7 +39,7 @@ function TypingIndicator() {
     </div>
   )
 }
-
+// this ia a function defining the message body
 function MessageBubble({ message }) {
   const isUser = message.role === 'user'
   const isError = message.isError
