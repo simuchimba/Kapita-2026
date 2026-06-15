@@ -211,7 +211,7 @@ SIMPLE_JWT = {
 def get_cors_origins():
     base_origins = config(
         'CORS_ALLOWED_ORIGINS',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173'
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173'
     ).split(',')
     live_domains = ['https://www.kapita.online', 'https://kapita.online']
     # Combine and deduplicate
@@ -222,7 +222,7 @@ CORS_ALLOWED_ORIGINS = get_cors_origins()
 def get_csrf_origins():
     base_origins = config(
         'CSRF_TRUSTED_ORIGINS',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:5173'
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173'
     ).split(',')
     live_domains = ['https://www.kapita.online', 'https://kapita.online']
     # Combine and deduplicate
@@ -249,7 +249,7 @@ CLERK_JWT_KEY = config('CLERK_JWT_KEY', default='')
 def get_clerk_authorized_parties():
     base_parties = config(
         'CLERK_AUTHORIZED_PARTIES',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
+        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173',
     ).split(',')
     live_domains = ['https://www.kapita.online', 'https://kapita.online']
     return list(dict.fromkeys([origin.strip() for origin in base_parties + live_domains if origin.strip()]))
