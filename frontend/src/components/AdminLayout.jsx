@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { billingAPI } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import {
   Activity,
   BadgeCheck,
