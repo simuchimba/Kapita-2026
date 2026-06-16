@@ -1,15 +1,8 @@
 import axios from 'axios'
-import { isClerkEnabled } from '../config/auth'
 import { useAuthStore } from '../store/authStore'
 
 const API_URL =
   import.meta.env.VITE_API_URL || '/api'
-
-let clerkTokenGetter = null
-
-export function setClerkTokenGetter(getter) {
-  clerkTokenGetter = getter
-}
 
 const api = axios.create({
   baseURL: API_URL,
@@ -18,30 +11,18 @@ const api = axios.create({
   },
 })
 
-async function resolveAuthToken(options = {}) {
-  if (isClerkEnabled && clerkTokenGetter) {
-    try {
-      const clerkToken = await clerkTokenGetter(options)
-      if (clerkToken) return clerkToken
-    } catch (_) {
-      // No Clerk session
-    }
+async function resolveAuthToken() {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    return token
   }
-
-  const legacyToken = localStorage.getItem('access_token')
-  if (legacyToken) {
-    return legacyToken
-  }
-
   return null
 }
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    const token = await resolveAuthToken(
-      config._clerkSkipCache ? { skipCache: true } : {},
-    )
+    const token = await resolveAuthToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -72,11 +53,9 @@ api.interceptors.response.use(
 
     // If it's a token error, clear storage and redirect
     if (isTokenError) {
-      useAuthStore.getState().logout({ skipClerk: true })
-      if (!isClerkEnabled) {
-        const isAdminPath = window.location.pathname.startsWith('/admin')
-        window.location.href = isAdminPath ? '/admin/login' : '/login'
-      }
+      useAuthStore.getState().logout()
+      const isAdminPath = window.location.pathname.startsWith('/admin')
+      window.location.href = isAdminPath ? '/admin/login' : '/login'
       return Promise.reject(error)
     }
 
@@ -89,18 +68,6 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-
-      if (isClerkEnabled && clerkTokenGetter) {
-        try {
-          const token = await clerkTokenGetter({ skipCache: true })
-          if (token) {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            return api(originalRequest)
-          }
-        } catch (_) {
-          // Fall through to legacy refresh or redirect
-        }
-      }
 
       try {
         const refreshToken = localStorage.getItem('refresh_token')
@@ -116,11 +83,9 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access}`
         return api(originalRequest)
       } catch (refreshError) {
-        useAuthStore.getState().logout({ skipClerk: true })
-        if (!isClerkEnabled) {
-          const isAdminPath = window.location.pathname.startsWith('/admin')
-          window.location.href = isAdminPath ? '/admin/login' : '/login'
-        }
+        useAuthStore.getState().logout()
+        const isAdminPath = window.location.pathname.startsWith('/admin')
+        window.location.href = isAdminPath ? '/admin/login' : '/login'
         return Promise.reject(refreshError)
       }
     }
@@ -139,6 +104,8 @@ export const authAPI = {
   updateReceiptSettings: (data) => api.put('/auth/receipt-settings/', data),
   updateProfile: (data) => api.put('/auth/profile/', data),
   changePassword: (data) => api.post('/auth/change-password/', data),
+  verifyEmail: (token) => api.post('/auth/verify-email/', { token }),
+  resendVerification: (email) => api.post('/auth/resend-verification/', { email }),
 }
 
 // Products API
@@ -322,6 +289,16 @@ export const purchaseOrdersAPI = {
   update: (id, data) => api.put(`/purchase-orders/${id}/`, data),
   delete: (id) => api.delete(`/purchase-orders/${id}/`),
   receive: (id) => api.post(`/purchase-orders/${id}/receive/`),
+}
+
+// Quotations API
+export const quotationsAPI = {
+  getAll: (params) => api.get('/quotations/', { params }),
+  getOne: (id) => api.get(`/quotations/${id}/`),
+  create: (data) => api.post('/quotations/', data),
+  update: (id, data) => api.put(`/quotations/${id}/`, data),
+  delete: (id) => api.delete(`/quotations/${id}/`),
+  getPDF: (id) => api.get(`/quotations/${id}/pdf/`, { responseType: 'blob' }),
 }
 
 export default api

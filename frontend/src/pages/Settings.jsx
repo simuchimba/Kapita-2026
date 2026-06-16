@@ -3,6 +3,7 @@ import { User, Building, Lock, FileText } from 'lucide-react'
 import Card from '../components/Card'
 import { useAuthStore } from '../store/authStore'
 import { authAPI } from '../services/api'
+import api from '../services/api'
 import { isClerkEnabled } from '../config/auth'
 
 const emptyReceiptForm = {
@@ -16,6 +17,13 @@ const emptyReceiptForm = {
   tin: '',
   vat_number: '',
   business_registration_number: '',
+  logo: '',
+  bank_name: '',
+  bank_account_name: '',
+  bank_account_number: '',
+  bank_sort_code: '',
+  bank_iban: '',
+  bank_swift: '',
   receipt_tagline: 'Official proof of purchase',
   receipt_thank_you: 'Thank you for your purchase! We appreciate your business.',
   receipt_return_policy:
@@ -29,6 +37,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false)
   const [receiptLoading, setReceiptLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [logoPreview, setLogoPreview] = useState(null)
 
   const [profileData, setProfileData] = useState({
     first_name: '',
@@ -66,6 +75,9 @@ export default function Settings() {
       try {
         const response = await authAPI.getReceiptSettings()
         setReceiptData({ ...emptyReceiptForm, ...response.data })
+        if (response.data.logo) {
+          setLogoPreview(response.data.logo)
+        }
       } catch (error) {
         console.error('Failed to load receipt settings:', error)
         setMessage({ type: 'error', text: 'Failed to load receipt settings' })
@@ -96,13 +108,40 @@ export default function Settings() {
     }
   }
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+      // Update receiptData with file
+      setReceiptData({ ...receiptData, logo: file })
+    }
+  }
+
   const handleReceiptUpdate = async (e) => {
     e.preventDefault()
     setLoading(true)
     setMessage({ type: '', text: '' })
 
     try {
-      await authAPI.updateReceiptSettings(receiptData)
+      const formData = new FormData()
+      Object.entries(receiptData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key === 'logo' && value instanceof File) {
+            formData.append(key, value)
+          } else if (key === 'logo' && typeof value === 'string') {
+            // If it's a string URL, don't append it (it's already stored)
+          } else {
+            formData.append(key, value)
+          }
+        }
+      })
+      
+      await api.put('/auth/receipt-settings/', formData)
       await fetchUser()
       setMessage({ type: 'success', text: 'Receipt details saved. New receipts will use these details.' })
     } catch (error) {
@@ -299,6 +338,24 @@ export default function Settings() {
                       onChange={(e) => setReceiptData({ ...receiptData, business_name: e.target.value })}
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="label">Company Logo</label>
+                    {logoPreview && (
+                      <div className="mb-2">
+                        <img
+                          src={logoPreview}
+                          alt="Company logo preview"
+                          className="h-20 object-contain"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="input"
+                      onChange={handleLogoChange}
+                    />
+                  </div>
                   <div>
                     <label className="label">Salesperson first name</label>
                     <input
@@ -383,6 +440,66 @@ export default function Settings() {
                       onChange={(e) =>
                         setReceiptData({ ...receiptData, business_registration_number: e.target.value })
                       }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Bank Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="label">Bank Name</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_name}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="label">Account Name</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_account_name}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_account_name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Account Number</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_account_number}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_account_number: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Sort Code / Routing Number</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_sort_code}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_sort_code: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">IBAN</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_iban}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_iban: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">SWIFT / BIC</label>
+                    <input
+                      type="text"
+                      className="input"
+                      value={receiptData.bank_swift}
+                      onChange={(e) => setReceiptData({ ...receiptData, bank_swift: e.target.value })}
                     />
                   </div>
                 </div>

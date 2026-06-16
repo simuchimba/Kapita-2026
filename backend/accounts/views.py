@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .serializers import (
     UserSerializer,
@@ -16,11 +18,50 @@ from .serializers import (
 User = get_user_model()
 
 
+def send_verification_email(user):
+    """Send verification email to user"""
+    token = user.generate_email_verification_token()
+    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    subject = "Verify your Kapita account"
+    message = f"""
+Hi {user.first_name or user.username},
+
+Thank you for signing up for Kapita! Please verify your email address by clicking the link below:
+
+{verification_url}
+
+This link will expire in 24 hours.
+
+If you didn't create this account, you can ignore this email.
+
+Best regards,
+The Kapita Team
+    """.strip()
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        return False
+
+
 class RegisterView(generics.CreateAPIView):
     """User registration endpoint"""
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        # Disable email verification for testing
+        user.email_verified = True
+        user.save()
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -83,3 +124,71 @@ def get_user_info(request):
     """Get current user information"""
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    """Verify email using token"""
+    token = request.data.get('token')
+    if not token:
+        return Response(
+            {"detail": "Token is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.get(email_verification_token=token)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "Invalid token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not user.is_email_verification_token_valid(token):
+        return Response(
+            {"detail": "Token has expired"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user.email_verified = True
+    user.email_verification_token = None
+    user.email_verification_token_expires_at = None
+    user.save()
+
+    return Response(
+        {"detail": "Email verified successfully"},
+        status=status.HTTP_200_OK
+    )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification_email(request):
+    """Resend verification email"""
+    email = request.data.get('email')
+    if not email:
+        return Response(
+            {"detail": "Email is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "User with this email not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if user.email_verified:
+        return Response(
+            {"detail": "Email is already verified"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    send_verification_email(user)
+    return Response(
+        {"detail": "Verification email sent"},
+        status=status.HTTP_200_OK
+    )

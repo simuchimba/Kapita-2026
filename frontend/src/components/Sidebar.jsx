@@ -26,6 +26,7 @@ const businessNavigation = [
   { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/app/products', icon: Package },
   { name: 'Sales', href: '/app/sales', icon: ShoppingCart },
+  { name: 'Quotations', href: '/app/quotations', icon: FileText },
   { name: 'Promotions', href: '/app/promotions', icon: Tag },
   { name: 'Suppliers', href: '/app/suppliers', icon: UserPlus },
   { name: 'Purchase Orders', href: '/app/purchase-orders', icon: PackageOpen },

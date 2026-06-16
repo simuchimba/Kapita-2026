@@ -19,7 +19,7 @@
       "dest": "backend/vercel_app.py"
     },
     {
-      "src": "/admin(.*)",
+      "src": "/admin/(.*)",
       "dest": "backend/vercel_app.py"
     },
     {
@@ -32,7 +32,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/$1"
+      "dest": "frontend/index.html"
     }
   ],
   "env": {

@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignUp } from '@clerk/react'
 import AuthPageLayout from '../../components/auth/AuthPageLayout'
 import { AuthFooterLinks, AuthLink } from '../../components/auth/AuthFooter'
-import { kapitaClerkAppearance } from '../../config/clerkAppearance'
 import { useAuthStore } from '../../store/authStore'
-import { isClerkEnabled } from '../../config/auth'
 import PasswordInput from '../../components/PasswordInput'
 
 export default function Register() {
@@ -33,23 +30,6 @@ export default function Register() {
       secondary={<AuthLink to="/">← Back to home</AuthLink>}
     />
   )
-
-  if (isClerkEnabled) {
-    return (
-      <AuthPageLayout
-        title="Create your account"
-        subtitle="Start your free trial and track your business in one place"
-        footer={signInFooter}
-      >
-        <SignUp
-          routing="virtual"
-          signInUrl="/login"
-          forceRedirectUrl="/app/dashboard"
-          appearance={kapitaClerkAppearance}
-        />
-      </AuthPageLayout>
-    )
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()

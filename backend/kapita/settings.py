@@ -23,6 +23,8 @@ if RENDER:
     default_allowed_hosts = f"{default_allowed_hosts},*.onrender.com"
 if VERCEL:
     default_allowed_hosts = f"{default_allowed_hosts},*.vercel.app"
+# Add Kapita live domain
+default_allowed_hosts = f"{default_allowed_hosts},kapita.online,www.kapita.online"
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=default_allowed_hosts).split(',')
 
@@ -60,6 +62,7 @@ INSTALLED_APPS = [
     'suppliers',
     'purchase_orders',
     'outgoing_payments',
+    'quotations',
 ]
 
 MIDDLEWARE = [
@@ -243,18 +246,20 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Clerk auth (optional — when set, frontend uses Clerk and API accepts Clerk session tokens)
-CLERK_SECRET_KEY = config('CLERK_SECRET_KEY', default='')
-CLERK_JWT_KEY = config('CLERK_JWT_KEY', default='')
-def get_clerk_authorized_parties():
-    base_parties = config(
-        'CLERK_AUTHORIZED_PARTIES',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173',
-    ).split(',')
-    live_domains = ['https://www.kapita.online', 'https://kapita.online']
-    return list(dict.fromkeys([origin.strip() for origin in base_parties + live_domains if origin.strip()]))
+# Email settings (Resend)
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.smtp.EmailBackend'
+)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.resend.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='apikey')
+EMAIL_HOST_PASSWORD = config('RESEND_API_KEY', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@kapita.online')
 
-CLERK_AUTHORIZED_PARTIES = get_clerk_authorized_parties()
+# Frontend URL for verification links
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
 # OpenRouter / OpenAI-compatible AI (Mumu chat + analytics proxy)
 OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')

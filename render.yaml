@@ -61,9 +61,9 @@ services:
       - key: OPENROUTER_MODEL
         sync: false
         description: "Optional: OpenRouter model name"
-      - key: CLERK_SECRET_KEY
+      - key: RESEND_API_KEY
         sync: false
-        description: "Optional: Clerk secret key for authentication"
-      - key: CLERK_AUTHORIZED_PARTIES
-        sync: false
-        description: "Optional: Frontend URL for Clerk"
+        description: "Resend API key for email verification"
+      - key: DEFAULT_FROM_EMAIL
+        value: "noreply@kapita.online"
+        description: "Verified email from Resend for sending"

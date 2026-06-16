@@ -1,73 +1,114 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignIn } from '@clerk/react'
 import AuthPageLayout from '../../components/auth/AuthPageLayout'
 import { AuthFooterLinks, AuthLink } from '../../components/auth/AuthFooter'
-import { kapitaClerkAppearance } from '../../config/clerkAppearance'
 import { useAuthStore } from '../../store/authStore'
-import { isClerkEnabled } from '../../config/auth'
 import PasswordInput from '../../components/PasswordInput'
 import { getPostAuthPath } from '../../utils/postAuthPath'
+import { authAPI } from '../../services/api'
 
-function LegacyLoginForm({ onSuccess }) {
+function LoginForm({ onSuccess }) {
   const { login, loading } = useAuthStore()
   const [formData, setFormData] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
+  const [showResend, setShowResend] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendMessage, setResendMessage] = useState('')
+  const [resendError, setResendError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setShowResend(false)
     const result = await login(formData)
     if (result.success) {
       onSuccess(result.user)
     } else {
       const detail = result.error?.detail
       setError(typeof detail === 'string' ? detail : 'Invalid credentials')
+      setShowResend(true)
+      setResendEmail(formData.username.includes('@') ? formData.username : '')
+    }
+  }
+
+  const handleResend = async (e) => {
+    e.preventDefault()
+    setResendMessage('')
+    setResendError('')
+    try {
+      await authAPI.resendVerification(resendEmail)
+      setResendMessage('Verification email sent!')
+    } catch (err) {
+      setResendError(err.response?.data?.detail || 'Failed to send verification email')
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-600">{error}</p>
+    <div className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+        <div>
+          <label className="label">Username or Email</label>
+          <input
+            type="text"
+            required
+            className="input"
+            value={formData.username}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="label">Password</label>
+          <PasswordInput
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
+        </div>
+        <button type="submit" disabled={loading} className="btn btn-primary w-full">
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+
+      {showResend && (
+        <div className="border-t pt-4 mt-4">
+          <p className="text-sm text-gray-600 mb-3">
+            Haven't verified your email yet?
+          </p>
+          <form onSubmit={handleResend} className="space-y-3">
+            <div>
+              <input
+                type="email"
+                required
+                placeholder="Enter your email"
+                className="input"
+                value={resendEmail}
+                onChange={(e) => setResendEmail(e.target.value)}
+              />
+            </div>
+            {resendMessage && (
+              <p className="text-sm text-green-600">{resendMessage}</p>
+            )}
+            {resendError && (
+              <p className="text-sm text-red-600">{resendError}</p>
+            )}
+            <button type="submit" className="btn btn-secondary w-full">
+              Resend Verification Email
+            </button>
+          </form>
         </div>
       )}
-      <div>
-        <label className="label">Username</label>
-        <input
-          type="text"
-          required
-          className="input"
-          value={formData.username}
-          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="label">Password</label>
-        <PasswordInput
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          required
-        />
-      </div>
-      <button type="submit" disabled={loading} className="btn btn-primary w-full">
-        {loading ? 'Signing in...' : 'Sign in with password'}
-      </button>
-    </form>
+    </div>
   )
 }
 
 export default function Login() {
   const navigate = useNavigate()
-  const { logout, isAuthenticated, user } = useAuthStore()
-  const [useLegacyLogin, setUseLegacyLogin] = useState(false)
-
-  useEffect(() => {
-    if (!isClerkEnabled) {
-      logout()
-    }
-  }, [logout])
+  const { isAuthenticated, user } = useAuthStore()
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -86,64 +127,13 @@ export default function Login() {
     />
   )
 
-  if (isClerkEnabled) {
-    return (
-      <AuthPageLayout
-        title="Welcome back"
-        subtitle="Sign in to manage sales, expenses, and your business dashboard"
-        footer={signUpFooter}
-      >
-        <div className="auth-notice mb-4 text-left">
-          <p className="auth-notice-title">Existing Kapita account?</p>
-          <p className="mt-1 text-primary-900/90">
-            Sign in with the <strong>same email</strong> you used when you registered — your
-            sales, billing, and data will be linked automatically.
-          </p>
-        </div>
-
-        {!useLegacyLogin ? (
-          <>
-            <SignIn
-              routing="virtual"
-              signUpUrl="/register"
-              forceRedirectUrl="/app/dashboard"
-              appearance={kapitaClerkAppearance}
-            />
-            <div className="auth-divider">
-              <button
-                type="button"
-                onClick={() => setUseLegacyLogin(true)}
-                className="text-sm font-medium text-slate-600 hover:text-primary-700"
-              >
-                Use username &amp; password instead
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <LegacyLoginForm onSuccess={(u) => navigate(getPostAuthPath(u), { replace: true })} />
-            <div className="auth-divider">
-              <button
-                type="button"
-                onClick={() => setUseLegacyLogin(false)}
-                className="text-sm font-medium text-slate-600 hover:text-primary-700"
-              >
-                Back to secure sign-in
-              </button>
-            </div>
-          </>
-        )}
-      </AuthPageLayout>
-    )
-  }
-
   return (
     <AuthPageLayout
       title="Welcome back"
       subtitle="Sign in to manage sales, expenses, and your business dashboard"
       footer={signUpFooter}
     >
-      <LegacyLoginForm onSuccess={(u) => navigate(getPostAuthPath(u), { replace: true })} />
+      <LoginForm onSuccess={(u) => navigate(getPostAuthPath(u), { replace: true })} />
     </AuthPageLayout>
   )
 }

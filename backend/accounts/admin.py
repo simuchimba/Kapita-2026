@@ -10,7 +10,9 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ['username', 'email', 'business_name']
     
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Business Info', {'fields': ('phone', 'business_name', 'currency', 'theme')}),
+        ('Business Info', {'fields': ('phone', 'business_name', 'currency', 'theme', 'logo')}),
+        ('Receipt & Quotation Info', {'fields': ('address', 'website', 'tin', 'vat_number', 'business_registration_number')}),
+        ('Bank Details', {'fields': ('bank_name', 'bank_account_name', 'bank_account_number', 'bank_sort_code', 'bank_iban', 'bank_swift')}),
     )
     
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
