@@ -2,7 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum
+from django.http import StreamingHttpResponse
 from datetime import datetime, timedelta
+import json
 
 from products.models import Product
 from sales.models import Sale
@@ -10,7 +12,13 @@ from customers.models import Customer
 from credits.models import Credit
 from expenses.models import Expense
 
-from .openrouter_client import OpenRouterError, chat_completion
+from .openrouter_client import (
+    OpenRouterError,
+    chat_completion,
+    chat_completion_stream,
+    text_to_speech,
+    speech_to_text
+)
 
 
 class ChatAssistantView(APIView):
@@ -229,3 +237,129 @@ When introducing yourself or signing off, use the name Mumu.
 When discussing money, always use {context['currency']} as the currency.
 If asked about profitability, consider both profit and expenses. If asked about cash flow,
 explain the difference between revenue and available cash."""
+
+
+class ChatAssistantStreamView(APIView):
+    """Streaming AI Chat Assistant (Mumu) via OpenRouter"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_message = request.data.get('message', '')
+        messages = request.data.get('messages', [])
+
+        if not user_message:
+            return Response({'error': 'Message is required'}, status=400)
+
+        conversation = self._sanitize_conversation(messages, user_message)
+
+        context = self.get_business_context(request.user)
+        system_prompt = self.create_system_prompt(context)
+
+        try:
+            stream_response = chat_completion_stream(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                messages=conversation,
+            )
+            return StreamingHttpResponse(
+                self._generate_stream(stream_response),
+                content_type='text/event-stream',
+            )
+        except OpenRouterError as exc:
+            message = str(exc)
+            status = 503 if 'not configured' in message.lower() else 502
+            if status == 503:
+                message = (
+                    'Mumu is not configured yet. Add OPENROUTER_API_KEY to backend/.env '
+                    '(get a key at openrouter.ai/keys), set OPENROUTER_BASE_URL to '
+                    'https://openrouter.ai/api/v1, then restart the server.'
+                )
+            return Response({'error': message}, status=status)
+        except Exception as exc:
+            return Response({
+                'error': f'Failed to get AI response: {str(exc)}',
+            }, status=500)
+
+    def _sanitize_conversation(self, messages, user_message):
+        cleaned = []
+        if isinstance(messages, list):
+            for item in messages:
+                if not isinstance(item, dict):
+                    continue
+                role = (item.get('role') or '').strip()
+                content = (item.get('content') or '').strip()
+                if role in {'user', 'assistant'} and content:
+                    cleaned.append({'role': role, 'content': content})
+        cleaned = cleaned[-20:]
+        if not cleaned or cleaned[-1]['role'] != 'user' or cleaned[-1]['content'] != user_message:
+            cleaned.append({'role': 'user', 'content': user_message})
+        return cleaned
+
+    def get_business_context(self, user):
+        return ChatAssistantView.get_business_context(self, user)
+
+    def create_system_prompt(self, context):
+        return ChatAssistantView.create_system_prompt(self, context)
+
+    def _generate_stream(self, response):
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: '):
+                    data_str = line_str[6:]
+                    if data_str == '[DONE]':
+                        break
+                    try:
+                        data = json.loads(data_str)
+                        if data.get('choices'):
+                            delta = data['choices'][0].get('delta', {})
+                            content = delta.get('content', '')
+                            if content:
+                                yield f'data: {json.dumps({"content": content})}\n\n'
+                    except Exception:
+                        pass
+
+
+class TextToSpeechView(APIView):
+    """Text to Speech endpoint for Mumu"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        text = request.data.get('text', '')
+        if not text:
+            return Response({'error': 'Text is required'}, status=400)
+
+        try:
+            audio_bytes = text_to_speech(text)
+            return Response(
+                audio_bytes,
+                content_type='audio/mpeg',
+                headers={'Content-Disposition': 'attachment; filename="mumu_speech.mp3"'}
+            )
+        except OpenRouterError as exc:
+            message = str(exc)
+            status = 503 if 'not configured' in message.lower() else 502
+            return Response({'error': message}, status=status)
+        except Exception as exc:
+            return Response({'error': f'Failed to generate speech: {str(exc)}'}, status=500)
+
+
+class SpeechToTextView(APIView):
+    """Speech to Text endpoint for Mumu"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        audio_file = request.FILES.get('audio')
+        if not audio_file:
+            return Response({'error': 'Audio file is required'}, status=400)
+
+        try:
+            audio_bytes = audio_file.read()
+            text = speech_to_text(audio_bytes, filename=audio_file.name)
+            return Response({'text': text})
+        except OpenRouterError as exc:
+            message = str(exc)
+            status = 503 if 'not configured' in message.lower() else 502
+            return Response({'error': message}, status=status)
+        except Exception as exc:
+            return Response({'error': f'Failed to transcribe audio: {str(exc)}'}, status=500)
