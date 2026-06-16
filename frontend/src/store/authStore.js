@@ -29,7 +29,10 @@ export const useAuthStore = create((set, get) => ({
 
     set({ loading: true, error: null })
     try {
-      const response = await authAPI.login(credentials)
+      const response = await authAPI.login({
+        username_or_email: credentials.username,
+        password: credentials.password,
+      })
       const { access, refresh } = response.data
 
       localStorage.setItem('access_token', access)
@@ -50,7 +53,7 @@ export const useAuthStore = create((set, get) => ({
         error.response?.data?.detail ||
         (error.request && !error.response
           ? 'Cannot reach the server. Make sure the backend is running on port 8000.'
-          : 'Login failed. Check your username and password.')
+          : 'Login failed. Check your username/email and password.')
 
       set({
         error: message,

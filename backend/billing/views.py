@@ -317,6 +317,32 @@ class ActivityLogView(APIView):
         return Response(ActivityLogSerializer(logs, many=True).data)
 
 
+class DeleteUserView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def delete(self, request, user_id):
+        try:
+            user = get_object_or_404(User, id=user_id)
+
+            # Don't allow deleting the admin user who is currently logged in
+            if user == request.user:
+                return Response({'detail': 'You cannot delete your own account.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Delete the user (cascade will handle related objects)
+            ActivityLog.objects.create(
+                actor=request.user,
+                target_user=user,
+                action='user_deleted',
+                details={'username': user.username, 'email': user.email},
+            )
+            user.delete()
+
+            return Response({'message': 'User deleted successfully'})
+        except Exception as e:
+            print(f"Error deleting user: {str(e)}")
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class PaymentProofFileView(APIView):
     """Serve payment proof images in production (auth via header or ?token= for img tags)."""
     permission_classes = [IsAuthenticated]

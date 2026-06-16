@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import AuthPageLayout from '../../components/auth/AuthPageLayout'
 import { AuthFooterLinks, AuthLink } from '../../components/auth/AuthFooter'
 import { useAuthStore } from '../../store/authStore'
@@ -68,6 +68,14 @@ function LoginForm({ onSuccess }) {
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
+          <div className="mt-2 text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
         <button type="submit" disabled={loading} className="btn btn-primary w-full">
           {loading ? 'Signing in...' : 'Sign in'}

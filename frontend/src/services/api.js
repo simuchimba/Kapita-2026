@@ -106,6 +106,8 @@ export const authAPI = {
   changePassword: (data) => api.post('/auth/change-password/', data),
   verifyEmail: (email, code) => api.post('/auth/verify-email/', { email, code }),
   resendVerification: (email) => api.post('/auth/resend-verification/', { email }),
+  requestPasswordReset: (email) => api.post('/auth/password-reset/request/', { email }),
+  confirmPasswordReset: (email, code, newPassword) => api.post('/auth/password-reset/confirm/', { email, code, new_password: newPassword }),
 }
 
 // Products API
@@ -217,6 +219,7 @@ export const billingAPI = {
   getAdminOverview: () => api.get('/billing/admin/overview/'),
   getAdminUsers: (params) => api.get('/billing/admin/users/', { params }),
   exportAdminUsersCsv: (params) => api.get('/billing/admin/users/', { params: { ...params, export: 'csv' }, responseType: 'blob' }),
+  deleteUser: (userId) => api.delete(`/billing/admin/users/${userId}/delete/`),
   getAdminPayments: (params) => api.get('/billing/admin/payments/', { params }),
   approvePayment: (paymentId, data) => api.post(`/billing/admin/payments/${paymentId}/approve/`, data),
   rejectPayment: (paymentId, data) => api.post(`/billing/admin/payments/${paymentId}/reject/`, data),

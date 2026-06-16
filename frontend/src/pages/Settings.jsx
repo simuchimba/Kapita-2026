@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User, Building, Lock, FileText } from 'lucide-react'
 import Card from '../components/Card'
+import PasswordInput from '../components/PasswordInput'
 import { useAuthStore } from '../store/authStore'
 import { authAPI } from '../services/api'
 import api from '../services/api'
@@ -565,34 +566,31 @@ export default function Settings() {
               <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label className="label">Current Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
-                className="input"
                 value={passwordData.old_password}
                 onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                placeholder="Current Password"
               />
             </div>
 
             <div>
               <label className="label">New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
-                className="input"
                 value={passwordData.new_password}
                 onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                placeholder="New Password"
               />
             </div>
 
             <div>
               <label className="label">Confirm New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
-                className="input"
                 value={passwordData.confirm_password}
                 onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                placeholder="Confirm New Password"
               />
             </div>
 

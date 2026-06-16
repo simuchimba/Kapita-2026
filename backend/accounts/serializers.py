@@ -1,10 +1,44 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.utils.translation import gettext_lazy as _
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from billing.utils import access_summary
 
 User = get_user_model()
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'username_or_email'
+
+    def validate(self, attrs):
+        username_or_email = attrs.get('username_or_email')
+        password = attrs.get('password')
+
+        if username_or_email and password:
+            # Try to find user by email first
+            user = User.objects.filter(email=username_or_email).first()
+            if not user:
+                # If not found by email, try by username
+                user = User.objects.filter(username=username_or_email).first()
+
+            if user and user.check_password(password):
+                refresh = self.get_token(user)
+                data = {}
+                data['refresh'] = str(refresh)
+                data['access'] = str(refresh.access_token)
+                return data
+            else:
+                raise serializers.ValidationError(
+                    _('Unable to log in with provided credentials.'),
+                    code='authorization'
+                )
+        else:
+            raise serializers.ValidationError(
+                _('Must include "username_or_email" and "password".'),
+                code='authorization'
+            )
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -88,6 +122,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer for password change"""
     old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(
+        required=True,
+        validators=[validate_password]
+    )
+
+
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    """Serializer for requesting password reset"""
+    email = serializers.EmailField(required=True)
+
+
+class ResetPasswordConfirmSerializer(serializers.Serializer):
+    """Serializer for confirming password reset"""
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(required=True, min_length=6, max_length=6)
     new_password = serializers.CharField(
         required=True,
         validators=[validate_password]

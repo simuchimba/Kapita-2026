@@ -307,6 +307,7 @@ export default function Chat() {
               addMessage={(message) => setMessages((prev) => [...prev, message])}
               isLoading={loading}
               setIsLoading={setLoading}
+              buildConversationContext={buildConversationContext}
             />
           )}
         </div>

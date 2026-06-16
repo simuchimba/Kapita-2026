@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 
-export default function PasswordInput({ value, onChange, required = false, placeholder = "Password", className = "input" }) {
+export default function PasswordInput({ value, onChange, required = false, placeholder = "Password", className = "" }) {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -9,7 +9,7 @@ export default function PasswordInput({ value, onChange, required = false, place
       <input
         type={showPassword ? "text" : "password"}
         required={required}
-        className={className}
+        className={`input ${className}`}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

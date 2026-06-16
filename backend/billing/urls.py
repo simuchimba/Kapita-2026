@@ -13,6 +13,7 @@ from .views import (
     ExtendSubscriptionView,
     RevokeSubscriptionView,
     ActivityLogView,
+    DeleteUserView,
 )
 
 urlpatterns = [
@@ -22,6 +23,7 @@ urlpatterns = [
     path('proof/<int:payment_id>/', PaymentProofFileView.as_view(), name='billing-payment-proof'),
     path('admin/overview/', AdminOverviewView.as_view(), name='admin-overview'),
     path('admin/users/', AdminUsersView.as_view(), name='admin-users'),
+    path('admin/users/<int:user_id>/delete/', DeleteUserView.as_view(), name='admin-delete-user'),
     path('admin/payments/', AdminPaymentsView.as_view(), name='admin-payments'),
     path('admin/payments/<int:payment_id>/approve/', ApprovePaymentView.as_view(), name='admin-approve-payment'),
     path('admin/payments/<int:payment_id>/reject/', RejectPaymentView.as_view(), name='admin-reject-payment'),

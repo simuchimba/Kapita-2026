@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download, Search, History } from 'lucide-react'
+import { Download, Search, History, Trash2 } from 'lucide-react'
 import Card from '../../components/Card'
 import Loading from '../../components/Loading'
 import { billingAPI } from '../../services/api'
@@ -14,6 +14,8 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [subscriptionHistory, setSubscriptionHistory] = useState([])
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -60,6 +62,24 @@ export default function AdminUsers() {
     } catch (err) {
       console.error(err)
       alert('Failed to load subscription history')
+    }
+  }
+
+  const confirmDeleteUser = (user) => {
+    setUserToDelete(user)
+    setShowDeleteModal(true)
+  }
+
+  const deleteUser = async () => {
+    try {
+      await billingAPI.deleteUser(userToDelete.id)
+      setShowDeleteModal(false)
+      setUserToDelete(null)
+      loadUsers()
+    } catch (err) {
+      console.error(err)
+      const errorMsg = err.response?.data?.detail || 'Failed to delete user'
+      alert(errorMsg)
     }
   }
 
@@ -146,13 +166,22 @@ export default function AdminUsers() {
                     {user.expiry_date ? new Date(user.expiry_date).toLocaleDateString() : '—'}
                   </td>
                   <td className="py-4 pr-4">
-                    <button
-                      type="button"
-                      onClick={() => loadSubscriptionHistory(user)}
-                      className="btn btn-secondary btn-sm inline-flex items-center gap-2"
-                    >
-                      <History className="h-3 w-3" /> Subscriptions
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => loadSubscriptionHistory(user)}
+                        className="btn btn-secondary btn-sm inline-flex items-center gap-2"
+                      >
+                        <History className="h-3 w-3" /> Subscriptions
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => confirmDeleteUser(user)}
+                        className="btn bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 btn-sm inline-flex items-center gap-2"
+                      >
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -171,26 +200,53 @@ export default function AdminUsers() {
             ) : (
               <div className="space-y-3">
                 {subscriptionHistory.map((sub) => (
-                  <div key={sub.id} className="rounded-xl border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-gray-900">Subscription #{sub.id}</p>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        sub.status === 'active' ? 'bg-green-100 text-green-700' :
-                        sub.status === 'revoked' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {sub.status}
-                      </span>
-                    </div>
-                    <div className="mt-2 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
-                      <p><span className="font-medium">Start:</span> {new Date(sub.start_date).toLocaleDateString()}</p>
-                      <p><span className="font-medium">End:</span> {new Date(sub.end_date).toLocaleDateString()}</p>
-                      {sub.notes && <p className="sm:col-span-2"><span className="font-medium">Notes:</span> {sub.notes}</p>}
-                    </div>
+                <div key={sub.id} className="rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-gray-900">Subscription #{sub.id}</p>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      sub.status === 'active' ? 'bg-green-100 text-green-700' :
+                      sub.status === 'revoked' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {sub.status}
+                    </span>
                   </div>
-                ))}
+                  <div className="mt-2 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
+                    <p><span className="font-medium">Start:</span> {new Date(sub.start_date).toLocaleDateString()}</p>
+                    <p><span className="font-medium">End:</span> {new Date(sub.end_date).toLocaleDateString()}</p>
+                    {sub.notes && <p className="sm:col-span-2"><span className="font-medium">Notes:</span> {sub.notes}</p>}
+                  </div>
+                </div>
+              ))}
               </div>
             )}
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => { setShowDeleteModal(false); setUserToDelete(null); }}
+          title="Delete User"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <span className="font-medium text-gray-900">{userToDelete?.username}</span>?
+            </p>
+            <p className="text-xs text-red-600">This action cannot be undone and will delete all user data.</p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => { setShowDeleteModal(false); setUserToDelete(null); }}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteUser}
+                className="btn bg-red-600 hover:bg-red-700 text-white flex-1"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </Modal>
       </Card>

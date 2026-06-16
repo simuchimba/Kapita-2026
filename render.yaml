@@ -69,6 +69,12 @@ services:
       - key: OPENROUTER_VOICE
         sync: false
         description: "Optional: OpenRouter TTS voice name"
+      - key: RESEND_API_KEY
+        sync: false
+        description: "Optional: Resend API key for email"
+      - key: FRONTEND_URL
+        sync: false
+        description: "Your frontend URL (e.g., https://www.kapita.online)"
       - key: EMAIL_HOST
         value: "smtp.gmail.com"
       - key: EMAIL_PORT

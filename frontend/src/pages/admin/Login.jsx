@@ -49,7 +49,7 @@ export default function AdminLogin() {
         )}
 
         <div>
-          <label className="label">Username</label>
+          <label className="label">Username or Email</label>
           <input
             type="text"
             required
