@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Download } from 'lucide-react'
+import { Plus, Download, Edit2 } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -11,6 +11,7 @@ export default function Quotations() {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
     customer: '',
     subject: '',
@@ -29,8 +30,8 @@ export default function Quotations() {
 
   const getErrorMessage = (error) => {
     const data = error.response?.data
-    if (!data) return 'Failed to create quotation'
-    if (typeof data === 'string') return 'Failed to create quotation'
+    if (!data) return 'Failed to process quotation'
+    if (typeof data === 'string') return 'Failed to process quotation'
     if (typeof data.detail === 'string') return data.detail
     const fieldMessages = Object.entries(data)
       .map(([key, value]) => {
@@ -38,7 +39,7 @@ export default function Quotations() {
         if (typeof value === 'string') return `${key}: ${value}`
         return null
       }).filter(Boolean)
-    return fieldMessages.length > 0 ? fieldMessages.join(' | ') : 'Failed to create quotation'
+    return fieldMessages.length > 0 ? fieldMessages.join(' | ') : 'Failed to process quotation'
   }
 
   useEffect(() => {
@@ -54,16 +55,45 @@ export default function Quotations() {
       setQuotations(quotationsRes.data.results || quotationsRes.data)
       setCustomers(customersRes.data.results || customersRes.data)
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      console.error('Failed to fetch data', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadQuotationForEdit = async (id) => {
+    try {
+      const res = await quotationsAPI.getOne(id)
+      const q = res.data
+      setFormData({
+        customer: q.customer ? String(q.customer) : '',
+        subject: q.subject || '',
+        introduction: q.introduction || '',
+        vat_percentage: String(q.vat_percentage || '0'),
+        delivery_period: q.delivery_period || '',
+        payment_terms: q.payment_terms || '',
+        warranty: q.warranty || '',
+        validity_period: q.validity_period || '',
+        terms_and_conditions: q.terms_and_conditions || '',
+        notes: q.notes || '',
+        items: q.items.map(item => ({
+          description: item.description,
+          quantity: String(item.quantity),
+          unit_price: String(item.unit_price)
+        }))
+      })
+      setEditingId(id)
+      setShowModal(true)
+    } catch (error) {
+      console.error('Failed to load quotation', error)
+      alert('Failed to load quotation details')
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await quotationsAPI.create({
+      const payload = {
         customer: formData.customer ? Number(formData.customer) : null,
         subject: formData.subject,
         introduction: formData.introduction,
@@ -79,12 +109,17 @@ export default function Quotations() {
           quantity: Number(item.quantity),
           unit_price: Number(item.unit_price)
         }))
-      })
+      }
+      if (editingId) {
+        await quotationsAPI.update(editingId, payload)
+      } else {
+        await quotationsAPI.create(payload)
+      }
       setShowModal(false)
       resetForm()
       fetchData()
     } catch (error) {
-      console.error('Failed to create quotation:', error)
+      console.error('Failed to save quotation', error)
       alert(getErrorMessage(error))
     }
   }
@@ -105,6 +140,7 @@ export default function Quotations() {
         { description: '', quantity: '1', unit_price: '0' }
       ]
     })
+    setEditingId(null)
   }
 
   const addItem = () => {
@@ -176,6 +212,13 @@ export default function Quotations() {
       render: (row) => (
         <div className="flex items-center space-x-2">
           <button
+            onClick={() => loadQuotationForEdit(row.id)}
+            className="btn btn-sm btn-outline flex items-center space-x-1"
+          >
+            <Edit2 className="w-4 h-4" />
+            <span>Edit</span>
+          </button>
+          <button
             onClick={() => downloadPDF(row.id)}
             className="btn btn-sm btn-outline flex items-center space-x-1"
           >
@@ -215,7 +258,10 @@ export default function Quotations() {
           <p className="text-gray-600">Create and manage professional quotations</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            resetForm()
+            setShowModal(true)
+          }}
           className="btn btn-primary flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
@@ -228,14 +274,14 @@ export default function Quotations() {
         <Table columns={columns} data={quotations} />
       </Card>
 
-      {/* Add Quotation Modal */}
+      {/* Add/Edit Quotation Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => {
           setShowModal(false)
           resetForm()
         }}
-        title="Create New Quotation"
+        title={editingId ? "Edit Quotation" : "Create New Quotation"}
         size="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -453,7 +499,7 @@ export default function Quotations() {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Create Quotation
+              {editingId ? 'Save Changes' : 'Create Quotation'}
             </button>
           </div>
         </form>
