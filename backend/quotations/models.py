@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from customers.models import Customer
 
@@ -55,20 +56,20 @@ class Quotation(models.Model):
     def __str__(self):
         return f"Quotation {self.quotation_number} - {self.subject}"
 
-    def save(self, *args, **kwargs):
-        if not self.quotation_number:
-            # Generate quotation number
-            last_quotation = Quotation.objects.filter(user=self.user).order_by('-id').first()
-            if last_quotation:
-                last_id = last_quotation.id
-            else:
-                last_id = 0
-            self.quotation_number = f'QTN-{self.created_at.year if self.created_at else models.DateTimeField(auto_now_add=True).year}-{last_id + 1:05d}'
-        
-        # Calculate totals
+    def calculate_totals(self):
+        """Calculate subtotal, VAT, and total from items"""
         self.subtotal = sum(item.total for item in self.items.all())
-        self.vat_amount = (self.subtotal * self.vat_percentage) / 100
+        self.vat_amount = (self.subtotal * self.vat_percentage) / 100 if self.vat_percentage else 0
         self.total_amount = self.subtotal + self.vat_amount
+
+    def save(self, *args, **kwargs):
+        # Generate quotation number if not set
+        if not self.quotation_number:
+            # Get the last quotation from this user
+            last_quotation = Quotation.objects.filter(user=self.user).order_by('-id').first()
+            last_id = last_quotation.id if last_quotation else 0
+            year = timezone.now().year
+            self.quotation_number = f'QTN-{year}-{last_id + 1:05d}'
         
         super().save(*args, **kwargs)
 

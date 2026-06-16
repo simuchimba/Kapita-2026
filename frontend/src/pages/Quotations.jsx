@@ -30,6 +30,7 @@ export default function Quotations() {
   const getErrorMessage = (error) => {
     const data = error.response?.data
     if (!data) return 'Failed to create quotation'
+    if (typeof data === 'string') return 'Failed to create quotation'
     if (typeof data.detail === 'string') return data.detail
     const fieldMessages = Object.entries(data)
       .map(([key, value]) => {
