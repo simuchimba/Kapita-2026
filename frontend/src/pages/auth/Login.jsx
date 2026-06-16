@@ -7,10 +7,11 @@ import PasswordInput from '../../components/PasswordInput'
 import { getPostAuthPath } from '../../utils/postAuthPath'
 import { authAPI } from '../../services/api'
 
-function LoginForm({ onSuccess }) {
+function LoginForm({ onSuccess, prefillUsername }) {
   const { login, loading } = useAuthStore()
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({ username: '', password: '' })
+  const [searchParams] = useSearchParams()
+  const [formData, setFormData] = useState({ username: searchParams.get('email') || '', password: '' })
   const [error, setError] = useState('')
   const [showResend, setShowResend] = useState(false)
   const [resendEmail, setResendEmail] = useState('')
