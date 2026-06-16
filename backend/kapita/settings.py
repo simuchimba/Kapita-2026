@@ -287,6 +287,7 @@ EMAIL_BACKEND = config(
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.resend.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_TIMEOUT = 5  # 5 second timeout to prevent worker timeouts
 
 # Use RESEND_API_KEY if available, otherwise use EMAIL_HOST_PASSWORD
 resend_key = config('RESEND_API_KEY', default='')
