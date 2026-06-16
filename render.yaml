@@ -60,9 +60,18 @@ services:
       - key: OPENROUTER_MODEL
         sync: false
         description: "Optional: OpenRouter model name"
-      - key: RESEND_API_KEY
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
         sync: false
-        description: "Resend API key for email verification"
+        description: "Gmail email address"
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+        description: "Gmail app password"
       - key: DEFAULT_FROM_EMAIL
-        value: "noreply@kapita.online"
-        description: "Verified email from Resend for sending"
+        sync: false
+        description: "From email address"
