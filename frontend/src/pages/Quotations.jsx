@@ -298,7 +298,7 @@ export default function Quotations() {
         title={editingQuotation ? 'Edit Quotation' : 'Create New Quotation'}
         size="xl"
       >
-        <form className="space-y-4">
+        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label">Customer</label>
