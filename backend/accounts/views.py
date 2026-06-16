@@ -378,8 +378,11 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        # Send verification email
-        send_verification_email(user)
+        # Send verification email (don't fail registration if email fails)
+        try:
+            send_verification_email(user)
+        except Exception:
+            pass
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

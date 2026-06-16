@@ -19,7 +19,6 @@ export default function Register() {
     phone: '',
   })
   const [errors, setErrors] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const signInFooter = (
     <AuthFooterLinks
@@ -35,11 +34,9 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrors({})
-    setIsSubmitting(true)
 
     if (formData.password !== formData.password2) {
       setErrors({ password2: ['Passwords do not match'] })
-      setIsSubmitting(false)
       return
     }
 
@@ -49,7 +46,6 @@ export default function Register() {
     } else {
       setErrors(result.error || {})
     }
-    setIsSubmitting(false)
   }
 
   const renderError = (fieldName) => {
@@ -172,10 +168,10 @@ export default function Register() {
 
         <button 
           type="submit" 
-          disabled={isSubmitting} 
+          disabled={loading} 
           className="btn btn-primary w-full flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
+          {loading ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               Creating your account...
