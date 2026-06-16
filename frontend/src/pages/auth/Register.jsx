@@ -124,23 +124,27 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="label">Business Name <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+          <label className="label">Business Name</label>
           <input
             type="text"
+            required
             className="input"
             value={formData.business_name}
             onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
           />
+          {renderError('business_name')}
         </div>
 
         <div>
-          <label className="label">Phone <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+          <label className="label">Phone</label>
           <input
             type="tel"
+            required
             className="input"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
+          {renderError('phone')}
         </div>
 
         <div>

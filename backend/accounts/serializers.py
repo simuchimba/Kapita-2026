@@ -105,6 +105,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         validators=[validate_password]
     )
     password2 = serializers.CharField(write_only=True, required=True)
+    phone = serializers.CharField(required=True)
+    business_name = serializers.CharField(required=True)
 
     class Meta:
         model = User
