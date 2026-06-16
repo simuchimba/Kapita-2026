@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Sum
 from django.conf import settings
+from django.http import HttpResponse
 import os
 from io import BytesIO
 
@@ -391,6 +392,6 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
         doc.build(elements)
         buffer.seek(0)
-        response = Response(buffer.getvalue(), content_type='application/pdf')
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="quotation_{quotation.id}.pdf"'
         return response
