@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Download, Search } from 'lucide-react'
+import { Download, Search, History } from 'lucide-react'
 import Card from '../../components/Card'
 import Loading from '../../components/Loading'
 import { billingAPI } from '../../services/api'
 import { badgeClass, formatStatus, statusOptions } from './utils'
+import Modal from '../../components/Modal'
 
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [subscriptionHistory, setSubscriptionHistory] = useState([])
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -44,6 +48,18 @@ export default function AdminUsers() {
     } catch (err) {
       console.error(err)
       alert('Failed to export CSV')
+    }
+  }
+
+  const loadSubscriptionHistory = async (user) => {
+    setSelectedUser(user)
+    setShowSubscriptionModal(true)
+    try {
+      const res = await billingAPI.getSubscriptionHistory(user.id)
+      setSubscriptionHistory(res.data || [])
+    } catch (err) {
+      console.error(err)
+      alert('Failed to load subscription history')
     }
   }
 
@@ -98,6 +114,7 @@ export default function AdminUsers() {
                 <th className="py-3 pr-4">Days left</th>
                 <th className="py-3 pr-4">Last payment</th>
                 <th className="py-3 pr-4">Expiry</th>
+                <th className="py-3 pr-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -128,11 +145,54 @@ export default function AdminUsers() {
                   <td className="py-4 pr-4 text-gray-600">
                     {user.expiry_date ? new Date(user.expiry_date).toLocaleDateString() : '—'}
                   </td>
+                  <td className="py-4 pr-4">
+                    <button
+                      type="button"
+                      onClick={() => loadSubscriptionHistory(user)}
+                      className="btn btn-secondary btn-sm inline-flex items-center gap-2"
+                    >
+                      <History className="h-3 w-3" /> Subscriptions
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        <Modal
+          isOpen={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+          title={`Subscription History for ${selectedUser?.username || ''}`}
+        >
+          <div className="space-y-4">
+            {subscriptionHistory.length === 0 ? (
+              <p className="text-sm text-gray-500">No subscription history found.</p>
+            ) : (
+              <div className="space-y-3">
+                {subscriptionHistory.map((sub) => (
+                  <div key={sub.id} className="rounded-xl border border-gray-200 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-900">Subscription #{sub.id}</p>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        sub.status === 'active' ? 'bg-green-100 text-green-700' :
+                        sub.status === 'revoked' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {sub.status}
+                      </span>
+                    </div>
+                    <div className="mt-2 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
+                      <p><span className="font-medium">Start:</span> {new Date(sub.start_date).toLocaleDateString()}</p>
+                      <p><span className="font-medium">End:</span> {new Date(sub.end_date).toLocaleDateString()}</p>
+                      {sub.notes && <p className="sm:col-span-2"><span className="font-medium">Notes:</span> {sub.notes}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
       </Card>
     </div>
   )

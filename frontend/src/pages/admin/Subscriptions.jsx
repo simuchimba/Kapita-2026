@@ -69,6 +69,26 @@ export default function AdminSubscriptions() {
     }
   }
 
+  const createManualSubscription = async () => {
+    if (!selectedUserId) return
+    const days = Number(extendDays)
+    if (!days || days < 1) {
+      alert('Enter valid days')
+      return
+    }
+    setSaving(true)
+    try {
+      await billingAPI.extendSubscription(selectedUserId, { days, notes: extendNotes || 'Manual subscription' })
+      await loadHistory(selectedUserId)
+      setExtendNotes('')
+      alert('Manual subscription created.')
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create subscription')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <Loading />
 
   return (
@@ -110,7 +130,10 @@ export default function AdminSubscriptions() {
               <h3 className="font-medium text-gray-900">Manual actions</h3>
               <input className="input" type="number" min="1" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} placeholder="Days to extend" />
               <textarea className="input" rows={2} value={extendNotes} onChange={(e) => setExtendNotes(e.target.value)} placeholder="Notes (optional)" />
-              <button type="button" disabled={saving} onClick={extendSubscription} className="btn btn-primary w-full">
+              <button type="button" disabled={saving} onClick={createManualSubscription} className="btn btn-primary w-full">
+                Create manual subscription
+              </button>
+              <button type="button" disabled={saving} onClick={extendSubscription} className="btn btn-secondary w-full">
                 Extend subscription
               </button>
               <button type="button" disabled={saving} onClick={revokeSubscription} className="btn btn-secondary w-full">
