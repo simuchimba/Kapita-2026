@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Download, Edit2 } from 'lucide-react'
+import { Plus, Download, Edit, Trash2, Save } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -11,7 +11,7 @@ export default function Quotations() {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [editingId, setEditingId] = useState(null)
+  const [editingQuotation, setEditingQuotation] = useState(null)
   const [formData, setFormData] = useState({
     customer: '',
     subject: '',
@@ -23,6 +23,7 @@ export default function Quotations() {
     validity_period: '',
     terms_and_conditions: '',
     notes: '',
+    status: 'draft',
     items: [
       { description: '', quantity: '1', unit_price: '0' }
     ]
@@ -30,8 +31,8 @@ export default function Quotations() {
 
   const getErrorMessage = (error) => {
     const data = error.response?.data
-    if (!data) return 'Failed to process quotation'
-    if (typeof data === 'string') return 'Failed to process quotation'
+    if (!data) return 'Failed to save quotation'
+    if (typeof data === 'string') return 'Failed to save quotation'
     if (typeof data.detail === 'string') return data.detail
     const fieldMessages = Object.entries(data)
       .map(([key, value]) => {
@@ -39,7 +40,7 @@ export default function Quotations() {
         if (typeof value === 'string') return `${key}: ${value}`
         return null
       }).filter(Boolean)
-    return fieldMessages.length > 0 ? fieldMessages.join(' | ') : 'Failed to process quotation'
+    return fieldMessages.length > 0 ? fieldMessages.join(' | ') : 'Failed to save quotation'
   }
 
   useEffect(() => {
@@ -55,45 +56,16 @@ export default function Quotations() {
       setQuotations(quotationsRes.data.results || quotationsRes.data)
       setCustomers(customersRes.data.results || customersRes.data)
     } catch (error) {
-      console.error('Failed to fetch data', error)
+      console.error('Failed to fetch data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadQuotationForEdit = async (id) => {
-    try {
-      const res = await quotationsAPI.getOne(id)
-      const q = res.data
-      setFormData({
-        customer: q.customer ? String(q.customer) : '',
-        subject: q.subject || '',
-        introduction: q.introduction || '',
-        vat_percentage: String(q.vat_percentage || '0'),
-        delivery_period: q.delivery_period || '',
-        payment_terms: q.payment_terms || '',
-        warranty: q.warranty || '',
-        validity_period: q.validity_period || '',
-        terms_and_conditions: q.terms_and_conditions || '',
-        notes: q.notes || '',
-        items: q.items.map(item => ({
-          description: item.description,
-          quantity: String(item.quantity),
-          unit_price: String(item.unit_price)
-        }))
-      })
-      setEditingId(id)
-      setShowModal(true)
-    } catch (error) {
-      console.error('Failed to load quotation', error)
-      alert('Failed to load quotation details')
-    }
-  }
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, saveAsDraft = false) => {
     e.preventDefault()
     try {
-      const payload = {
+      const data = {
         customer: formData.customer ? Number(formData.customer) : null,
         subject: formData.subject,
         introduction: formData.introduction,
@@ -104,27 +76,65 @@ export default function Quotations() {
         validity_period: formData.validity_period,
         terms_and_conditions: formData.terms_and_conditions,
         notes: formData.notes,
+        status: saveAsDraft ? 'draft' : formData.status,
         items: formData.items.map(item => ({
           description: item.description,
           quantity: Number(item.quantity),
           unit_price: Number(item.unit_price)
         }))
       }
-      if (editingId) {
-        await quotationsAPI.update(editingId, payload)
+      
+      if (editingQuotation) {
+        await quotationsAPI.update(editingQuotation.id, data)
       } else {
-        await quotationsAPI.create(payload)
+        await quotationsAPI.create(data)
       }
+      
       setShowModal(false)
       resetForm()
       fetchData()
     } catch (error) {
-      console.error('Failed to save quotation', error)
+      console.error('Failed to save quotation:', error)
       alert(getErrorMessage(error))
     }
   }
 
+  const handleEdit = (quotation) => {
+    setEditingQuotation(quotation)
+    setFormData({
+      customer: quotation.customer ? quotation.customer.id : '',
+      subject: quotation.subject,
+      introduction: quotation.introduction || '',
+      vat_percentage: String(quotation.vat_percentage),
+      delivery_period: quotation.delivery_period || '',
+      payment_terms: quotation.payment_terms || '',
+      warranty: quotation.warranty || '',
+      validity_period: quotation.validity_period || '',
+      terms_and_conditions: quotation.terms_and_conditions || '',
+      notes: quotation.notes || '',
+      status: quotation.status,
+      items: quotation.items.map(item => ({
+        description: item.description,
+        quantity: String(item.quantity),
+        unit_price: String(item.unit_price)
+      }))
+    })
+    setShowModal(true)
+  }
+
+  const handleDelete = async (quotationId) => {
+    if (!window.confirm('Are you sure you want to delete this quotation?')) return
+    try {
+      await quotationsAPI.delete(quotationId)
+      fetchData()
+    } catch (error) {
+      console.error('Failed to delete quotation:', error)
+      alert('Failed to delete quotation')
+    }
+  }
+
   const resetForm = () => {
+    setEditingQuotation(null)
     setFormData({
       customer: '',
       subject: '',
@@ -136,11 +146,11 @@ export default function Quotations() {
       validity_period: '',
       terms_and_conditions: '',
       notes: '',
+      status: 'draft',
       items: [
         { description: '', quantity: '1', unit_price: '0' }
       ]
     })
-    setEditingId(null)
   }
 
   const addItem = () => {
@@ -212,18 +222,25 @@ export default function Quotations() {
       render: (row) => (
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => loadQuotationForEdit(row.id)}
-            className="btn btn-sm btn-outline flex items-center space-x-1"
-          >
-            <Edit2 className="w-4 h-4" />
-            <span>Edit</span>
-          </button>
-          <button
             onClick={() => downloadPDF(row.id)}
             className="btn btn-sm btn-outline flex items-center space-x-1"
           >
             <Download className="w-4 h-4" />
             <span>Download PDF</span>
+          </button>
+          <button
+            onClick={() => handleEdit(row)}
+            className="btn btn-sm btn-outline flex items-center space-x-1"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Edit</span>
+          </button>
+          <button
+            onClick={() => handleDelete(row.id)}
+            className="btn btn-sm btn-outline text-red-600 border-red-200 hover:bg-red-50 flex items-center space-x-1"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
           </button>
         </div>
       )
@@ -258,10 +275,7 @@ export default function Quotations() {
           <p className="text-gray-600">Create and manage professional quotations</p>
         </div>
         <button
-          onClick={() => {
-            resetForm()
-            setShowModal(true)
-          }}
+          onClick={() => setShowModal(true)}
           className="btn btn-primary flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
@@ -281,10 +295,10 @@ export default function Quotations() {
           setShowModal(false)
           resetForm()
         }}
-        title={editingId ? "Edit Quotation" : "Create New Quotation"}
+        title={editingQuotation ? 'Edit Quotation' : 'Create New Quotation'}
         size="xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label">Customer</label>
@@ -312,6 +326,20 @@ export default function Quotations() {
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="label">Status</label>
+            <select
+              className="input"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            >
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
 
           <div>
@@ -498,8 +526,20 @@ export default function Quotations() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {editingId ? 'Save Changes' : 'Create Quotation'}
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              className="btn btn-outline flex items-center space-x-1"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save as Draft</span>
+            </button>
+            <button
+              type="submit"
+              onClick={(e) => handleSubmit(e, false)}
+              className="btn btn-primary"
+            >
+              {editingQuotation ? 'Update Quotation' : 'Create Quotation'}
             </button>
           </div>
         </form>
