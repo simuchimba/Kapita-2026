@@ -78,11 +78,18 @@ class QuotationViewSet(viewsets.ModelViewSet):
         def safe_text(value, fallback=''):
             return value if value not in (None, '') else fallback
 
-        # Logo handling
+        # Logo handling - safely check if path exists
         logo_path = None
         if user.logo:
-            logo_path = user.logo.path
-        if not logo_path or not os.path.exists(logo_path):
+            try:
+                # Try to use local path if available
+                if hasattr(user.logo, 'path') and os.path.exists(user.logo.path):
+                    logo_path = user.logo.path
+            except (NotImplementedError, ValueError):
+                # Skip if path isn't available (e.g., remote storage like S3)
+                pass
+        
+        if not logo_path:
             # Fallback to default logo paths
             logo_paths = [
                 os.path.join(settings.BASE_DIR, 'static', 'kapita_logo.png'),
