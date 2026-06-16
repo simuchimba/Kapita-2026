@@ -35,7 +35,7 @@ export default function VerifyEmail() {
     try {
       await authAPI.verifyEmail(email, fullCode)
       setStatus('success')
-      setMessage('Email verified successfully! Redirecting to login...')
+      setMessage('Email verified successfully! Redirecting to login to access your dashboard...')
       setTimeout(() => navigate(`/login?email=${encodeURIComponent(email)}`), 2000)
     } catch (err) {
       setStatus('error')
