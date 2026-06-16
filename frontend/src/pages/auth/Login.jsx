@@ -9,6 +9,7 @@ import { authAPI } from '../../services/api'
 
 function LoginForm({ onSuccess }) {
   const { login, loading } = useAuthStore()
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [showResend, setShowResend] = useState(false)
@@ -23,6 +24,8 @@ function LoginForm({ onSuccess }) {
     const result = await login(formData)
     if (result.success) {
       onSuccess(result.user)
+    } else if (result.emailNotVerified) {
+      navigate(`/verify-email?email=${encodeURIComponent(result.email)}`)
     } else {
       const detail = result.error?.detail
       setError(typeof detail === 'string' ? detail : 'Invalid credentials')

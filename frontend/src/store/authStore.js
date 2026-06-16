@@ -23,46 +23,61 @@ export const useAuthStore = create((set, get) => ({
   error: null,
 
   login: async (credentials) => {
-    // Clear any old tokens first
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+        // Clear any old tokens first
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
 
-    set({ loading: true, error: null })
-    try {
-      const response = await authAPI.login({
-        username_or_email: credentials.username,
-        password: credentials.password,
-      })
-      const { access, refresh } = response.data
+        set({ loading: true, error: null })
+        try {
+            const response = await authAPI.login({
+                username_or_email: credentials.username,
+                password: credentials.password,
+            })
+            const { access, refresh } = response.data
 
-      localStorage.setItem('access_token', access)
-      localStorage.setItem('refresh_token', refresh)
+            localStorage.setItem('access_token', access)
+            localStorage.setItem('refresh_token', refresh)
 
-      const profileResponse = await authAPI.getProfile()
-      set({
-        user: profileResponse.data,
-        isAuthenticated: true,
-        loading: false,
-        sessionLoading: false,
-        error: null,
-      })
+            const profileResponse = await authAPI.getProfile()
+            set({
+                user: profileResponse.data,
+                isAuthenticated: true,
+                loading: false,
+                sessionLoading: false,
+                error: null,
+            })
 
-      return { success: true, user: profileResponse.data }
-    } catch (error) {
-      const message =
-        error.response?.data?.detail ||
-        (error.request && !error.response
-          ? 'Cannot reach the server. Make sure the backend is running on port 8000.'
-          : 'Login failed. Check your username/email and password.')
+            return { success: true, user: profileResponse.data }
+        } catch (error) {
+            // Check if it's the email not verified error
+            if (error.response?.data?.email_verified === false) {
+                set({
+                    error: error.response.data.detail,
+                    loading: false,
+                    isAuthenticated: false,
+                })
+                return { 
+                    success: false, 
+                    error: error.response.data, 
+                    emailNotVerified: true,
+                    email: error.response.data.email
+                }
+            }
+            
+            const message =
+                error.response?.data?.detail ||
+                (error.request && !error.response
+                    ? 'Cannot reach the server. Make sure the backend is running on port 8000.'
+                    : 'Login failed. Check your username/email and password.')
 
-      set({
-        error: message,
-        loading: false,
-        isAuthenticated: false,
-      })
-      return { success: false, error: error.response?.data || { detail: message } }
-    }
-  },
+            set({
+                error: message,
+                loading: false,
+                isAuthenticated: false,
+            })
+            return { success: false, error: error.response?.data || { detail: message } }
+        }
+    },
 
   register: async (userData) => {
     set({ loading: true, error: null })
