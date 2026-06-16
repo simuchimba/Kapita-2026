@@ -553,7 +553,10 @@ def request_password_reset(request):
             status=status.HTTP_200_OK
         )
 
-    send_password_reset_email(user)
+    try:
+        send_password_reset_email(user)
+    except Exception:
+        pass
     return Response(
         {"detail": "If an account exists with this email, a password reset link has been sent"},
         status=status.HTTP_200_OK
