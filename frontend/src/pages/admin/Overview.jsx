@@ -9,6 +9,8 @@ import {
   UploadCloud,
   Users,
   Wallet,
+  MessageSquare,
+  Download,
 } from 'lucide-react'
 import {
   Bar,
@@ -102,10 +104,16 @@ export default function AdminOverview() {
             SaaS metrics, user access breakdown, and payment analytics.
           </p>
         </div>
-        <button type="button" onClick={loadOverview} className="btn btn-secondary inline-flex items-center gap-2 self-start">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <Link to="/app/chat" className="btn btn-primary inline-flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Chat with Mumu
+          </Link>
+          <button type="button" onClick={loadOverview} className="btn btn-secondary inline-flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (

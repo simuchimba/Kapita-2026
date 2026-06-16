@@ -8,8 +8,11 @@ import {
   AlertTriangle,
   Receipt,
   MessageCircle,
+  Mic,
+  Type,
 } from 'lucide-react'
 import { chatAPI } from '../services/api'
+import VoiceChat from '../components/VoiceChat'
 
 const SUGGESTIONS = [
   { text: 'Who owes me the most money?', icon: Wallet },
@@ -65,8 +68,8 @@ function MessageBubble({ message }) {
             isUser
               ? 'rounded-2xl rounded-tr-md bg-primary-600 text-white shadow-sm shadow-primary-600/15'
               : isError
-                ? 'rounded-2xl rounded-tl-md border border-red-200 bg-red-50 text-red-800'
-                : 'rounded-2xl rounded-tl-md border border-gray-100 bg-white text-gray-800 shadow-sm'
+              ? 'rounded-2xl rounded-tl-md border border-red-200 bg-red-50 text-red-800'
+              : 'rounded-2xl rounded-tl-md border border-gray-100 bg-white text-gray-800 shadow-sm'
           }`}
         >
           <p className="whitespace-pre-wrap">{message.content}</p>
@@ -80,6 +83,7 @@ export default function Chat() {
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [chatMode, setChatMode] = useState('text') // 'text' or 'voice'
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -158,9 +162,35 @@ export default function Chat() {
             AI assistant powered by your live business data
           </p>
         </div>
-        <div className="hidden items-center gap-2 text-xs text-gray-400 sm:flex">
-          <MessageCircle className="h-3.5 w-3.5" />
-          <span>Sales · Inventory · Credits · Expenses</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-full border border-gray-200 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => setChatMode('text')}
+              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                chatMode === 'text'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Type className="h-3.5 w-3.5" />
+              <span>Text</span>
+            </button>
+            <button
+              onClick={() => setChatMode('voice')}
+              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                chatMode === 'voice'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              <span>Voice</span>
+            </button>
+          </div>
+          <div className="hidden items-center gap-2 text-xs text-gray-400 sm:flex">
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span>Sales · Inventory · Credits · Expenses</span>
+          </div>
         </div>
       </div>
 
@@ -191,83 +221,94 @@ export default function Chat() {
 
         {/* Chat panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-          {/* Messages */}
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary-50/30 via-transparent to-transparent" />
-            <div className="relative space-y-6 p-4 sm:p-6">
-              {messages.map((message, index) => (
-                <MessageBubble key={index} message={message} />
-              ))}
+          {chatMode === 'text' ? (
+            <>
+              {/* Messages */}
+              <div className="relative min-h-0 flex-1 overflow-y-auto">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary-50/30 via-transparent to-transparent" />
+                <div className="relative space-y-6 p-4 sm:p-6">
+                  {messages.map((message, index) => (
+                    <MessageBubble key={index} message={message} />
+                  ))}
 
-              {loading && (
-                <div className="flex flex-col gap-1">
-                  <span className="px-1 text-xs font-medium text-primary-700">Mumu</span>
-                  <div className="w-fit rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                    <TypingIndicator />
-                  </div>
+                  {loading && (
+                    <div className="flex flex-col gap-1">
+                      <span className="px-1 text-xs font-medium text-primary-700">Mumu</span>
+                      <div className="w-fit rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                        <TypingIndicator />
+                      </div>
+                    </div>
+                  )}
+
+                  {showSuggestions && (
+                    <div className="pt-2 lg:hidden">
+                      <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+                        Try asking
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {SUGGESTIONS.slice(0, 4).map(({ text, icon: Icon }) => (
+                          <button
+                            key={text}
+                            type="button"
+                            onClick={() => sendMessage(text)}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800 disabled:opacity-50"
+                          >
+                            <Icon className="h-3 w-3 text-primary-600" />
+                            {text.length > 28 ? `${text.slice(0, 28)}…` : text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </div>
-              )}
+              </div>
 
-              {showSuggestions && (
-                <div className="pt-2 lg:hidden">
-                  <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Try asking
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {SUGGESTIONS.slice(0, 4).map(({ text, icon: Icon }) => (
-                      <button
-                        key={text}
-                        type="button"
-                        onClick={() => sendMessage(text)}
-                        disabled={loading}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800 disabled:opacity-50"
-                      >
-                        <Icon className="h-3 w-3 text-primary-600" />
-                        {text.length > 28 ? `${text.slice(0, 28)}…` : text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* Input */}
-          <div className="border-t border-gray-100 bg-gray-50/80 p-4">
-            <form
-              onSubmit={handleSubmit}
-              className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-500/20"
-            >
-              <textarea
-                ref={inputRef}
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSubmit(e)
-                  }
-                }}
-                placeholder="Ask Mumu about sales, stock, debts, or profits…"
-                className="max-h-32 min-h-[44px] flex-1 resize-none border-0 bg-transparent px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white transition-all hover:bg-primary-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
-                aria-label="Send message"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-            <p className="mt-2 text-center text-xs text-gray-400">
-              Enter to send · Shift+Enter for new line
-            </p>
-          </div>
+              {/* Input */}
+              <div className="border-t border-gray-100 bg-gray-50/80 p-4">
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-500/20"
+                >
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSubmit(e)
+                      }
+                    }}
+                    placeholder="Ask Mumu about sales, stock, debts, or profits…"
+                    className="max-h-32 min-h-[44px] flex-1 resize-none border-0 bg-transparent px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                    disabled={loading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !input.trim()}
+                    className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white transition-all hover:bg-primary-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                    aria-label="Send message"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </form>
+                <p className="mt-2 text-center text-xs text-gray-400">
+                  Enter to send · Shift+Enter for new line
+                </p>
+              </div>
+            </>
+          ) : (
+            <VoiceChat
+              messages={messages}
+              addMessage={(message) => setMessages((prev) => [...prev, message])}
+              isLoading={loading}
+              setIsLoading={setLoading}
+            />
+          )}
         </div>
       </div>
     </div>

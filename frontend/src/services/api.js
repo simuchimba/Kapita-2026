@@ -247,6 +247,13 @@ export const aiAPI = {
 // Chat API
 export const chatAPI = {
   sendMessage: (message, messages = []) => api.post('/chat/', { message, messages }),
+  streamMessage: (message, messages = []) => api.post('/chat/stream/', { message, messages }, { responseType: 'stream' }),
+  textToSpeech: (text) => api.post('/chat/tts/', { text }, { responseType: 'blob' }),
+  speechToText: (audioBlob) => {
+    const formData = new FormData()
+    formData.append('audio', audioBlob)
+    return api.post('/chat/stt/', formData)
+  },
 }
 
 // Notifications API
