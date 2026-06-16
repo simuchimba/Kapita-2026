@@ -36,8 +36,7 @@ import AdminUsers from './pages/admin/Users'
 import AdminPayments from './pages/admin/Payments'
 import AdminSubscriptions from './pages/admin/Subscriptions'
 import AdminActivity from './pages/admin/Activity'
-import AdminSuppliers from './pages/admin/Suppliers'
-import AdminPurchaseOrders from './pages/admin/PurchaseOrders'
+
 import NotFound from './pages/NotFound'
 
 function UserArea({ children }) {
@@ -149,8 +148,7 @@ function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="payments" element={<AdminPayments />} />
           <Route path="subscriptions" element={<AdminSubscriptions />} />
-          <Route path="suppliers" element={<AdminSuppliers />} />
-          <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
+
           <Route path="activity" element={<AdminActivity />} />
         </Route>
 
