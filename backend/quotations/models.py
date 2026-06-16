@@ -56,29 +56,21 @@ class Quotation(models.Model):
     def __str__(self):
         return f"Quotation {self.quotation_number} - {self.subject}"
 
+    def calculate_totals(self):
+        """Calculate subtotal, VAT, and total from items"""
+        self.subtotal = sum(item.total for item in self.items.all())
+        self.vat_amount = (self.subtotal * self.vat_percentage) / 100 if self.vat_percentage else 0
+        self.total_amount = self.subtotal + self.vat_amount
+
     def save(self, *args, **kwargs):
-        # Save once to get an ID if we don't have one yet
-        is_new = self._state.adding
-        if is_new and not self.id:
-            # Save without force_insert first to avoid conflicts when we save again
-            temp_kwargs = kwargs.copy()
-            temp_kwargs.pop('force_insert', None)
-            super().save(*args, **temp_kwargs)
-        
+        # Generate quotation number if not set
         if not self.quotation_number:
-            # Generate quotation number using current year
+            # Get the last quotation from this user
             last_quotation = Quotation.objects.filter(user=self.user).order_by('-id').first()
             last_id = last_quotation.id if last_quotation else 0
             year = timezone.now().year
             self.quotation_number = f'QTN-{year}-{last_id + 1:05d}'
         
-        # Calculate totals - only if we have an ID and can fetch items
-        if self.id:
-            self.subtotal = sum(item.total for item in self.items.all())
-            self.vat_amount = (self.subtotal * self.vat_percentage) / 100 if self.vat_percentage else 0
-            self.total_amount = self.subtotal + self.vat_amount
-        
-        # Final save
         super().save(*args, **kwargs)
 
 

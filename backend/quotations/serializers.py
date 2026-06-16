@@ -55,6 +55,8 @@ class QuotationSerializer(serializers.ModelSerializer):
         quotation = Quotation.objects.create(**validated_data)
         for item_data in items_data:
             QuotationItem.objects.create(quotation=quotation, **item_data)
+        # Calculate totals after items are saved
+        quotation.calculate_totals()
         quotation.save()
         return quotation
 
@@ -68,5 +70,7 @@ class QuotationSerializer(serializers.ModelSerializer):
             instance.items.all().delete()
             for item_data in items_data:
                 QuotationItem.objects.create(quotation=instance, **item_data)
-            instance.save()
+        # Calculate totals after items are updated
+        instance.calculate_totals()
+        instance.save()
         return instance
