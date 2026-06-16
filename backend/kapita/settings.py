@@ -23,6 +23,8 @@ if RENDER:
     default_allowed_hosts = f"{default_allowed_hosts},*.onrender.com"
 if VERCEL:
     default_allowed_hosts = f"{default_allowed_hosts},*.vercel.app"
+# Add Kapita live domain
+default_allowed_hosts = f"{default_allowed_hosts},kapita.online,www.kapita.online"
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=default_allowed_hosts).split(',')
 
