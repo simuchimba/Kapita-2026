@@ -60,6 +60,15 @@ services:
       - key: OPENROUTER_MODEL
         sync: false
         description: "Optional: OpenRouter model name"
+      - key: OPENROUTER_TTS_MODEL
+        sync: false
+        description: "Optional: OpenRouter TTS model name"
+      - key: OPENROUTER_STT_MODEL
+        sync: false
+        description: "Optional: OpenRouter STT model name"
+      - key: OPENROUTER_VOICE
+        sync: false
+        description: "Optional: OpenRouter TTS voice name"
       - key: EMAIL_HOST
         value: "smtp.gmail.com"
       - key: EMAIL_PORT
