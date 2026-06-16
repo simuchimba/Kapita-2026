@@ -23,7 +23,7 @@ VERCEL = config('VERCEL', default=False, cast=bool)
 
 default_allowed_hosts = 'localhost,127.0.0.1'
 if RENDER:
-    default_allowed_hosts = f"{default_allowed_hosts},*.onrender.com"
+    default_allowed_hosts = f"{default_allowed_hosts},*.onrender.com,kapita-api-fbpp.onrender.com"
 if VERCEL:
     default_allowed_hosts = f"{default_allowed_hosts},*.vercel.app"
 # Add Kapita live domain
@@ -234,13 +234,18 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
+# CORS Settings
 # Always add the live domains (with and without www)
 def get_cors_origins():
     base_origins = config(
         'CORS_ALLOWED_ORIGINS',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173'
+        default='http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000'
     ).split(',')
-    live_domains = ['https://www.kapita.online', 'https://kapita.online']
+    live_domains = [
+        'https://kapita.online',
+        'https://www.kapita.online',
+        'https://kapita-2026.vercel.app'
+    ]
     # Combine and deduplicate
     return list(dict.fromkeys([origin.strip() for origin in base_origins + live_domains if origin.strip()]))
 
@@ -249,9 +254,13 @@ CORS_ALLOWED_ORIGINS = get_cors_origins()
 def get_csrf_origins():
     base_origins = config(
         'CSRF_TRUSTED_ORIGINS',
-        default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173'
+        default='http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000'
     ).split(',')
-    live_domains = ['https://www.kapita.online', 'https://kapita.online']
+    live_domains = [
+        'https://kapita.online',
+        'https://www.kapita.online',
+        'https://kapita-2026.vercel.app'
+    ]
     # Combine and deduplicate
     return list(dict.fromkeys([origin.strip() for origin in base_origins + live_domains if origin.strip()]))
 
