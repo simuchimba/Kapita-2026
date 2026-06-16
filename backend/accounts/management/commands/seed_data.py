@@ -110,17 +110,19 @@ class Command(BaseCommand):
                 sku = f"PROD-{sku_counter}"
                 sku_counter += 1
 
-                p = Product.objects.create(
+                p, _ = Product.objects.get_or_create(
                     user=user,
-                    name=name,
-                    category=category,
                     sku=sku,
-                    buying_price=buy_price,
-                    selling_price=sell_price,
-                    quantity=qty,
-                    minimum_stock=min_stock,
-                    description=f"High quality {name.lower()} for your business.",
-                    supplier=random.choice(suppliers).name if random.random() > 0.3 else None
+                    defaults={
+                        'name': name,
+                        'category': category,
+                        'buying_price': buy_price,
+                        'selling_price': sell_price,
+                        'quantity': qty,
+                        'minimum_stock': min_stock,
+                        'description': f"High quality {name.lower()} for your business.",
+                        'supplier': random.choice(suppliers).name if random.random() > 0.3 else None
+                    }
                 )
                 products.append(p)
         self.stdout.write(f'Created {len(products)} products')
@@ -217,16 +219,18 @@ class Command(BaseCommand):
             for i in range(2):
                 date = timezone.now() - timedelta(days=random.randint(0, 20))
                 amount = random.randint(500, 3000)
-                OutgoingPayment.objects.create(
+                OutgoingPayment.objects.get_or_create(
                     user=user,
                     supplier=supplier,
                     payment_type="supplier",
-                    amount=amount,
-                    payment_method=random.choice(["cash", "mobile_money", "bank_transfer"]),
-                    reference=f"PO-REF-{random.randint(1000, 9999)}",
-                    notes=f"Payment to {supplier.name}",
-                    status="completed",
-                    transaction_date=date
+                    transaction_date=date,
+                    defaults={
+                        'amount': amount,
+                        'payment_method': random.choice(["cash", "mobile_money", "bank_transfer"]),
+                        'reference': f"PO-REF-{random.randint(1000, 9999)}",
+                        'notes': f"Payment to {supplier.name}",
+                        'status': "completed"
+                    }
                 )
         # Other payments
         other_payment_types = ["staff", "utilities", "rent", "other"]
@@ -234,15 +238,17 @@ class Command(BaseCommand):
             for i in range(2):
                 date = timezone.now() - timedelta(days=random.randint(0, 20))
                 amount = random.randint(200, 2000)
-                OutgoingPayment.objects.create(
+                OutgoingPayment.objects.get_or_create(
                     user=user,
                     payment_type=p_type,
-                    amount=amount,
-                    payment_method=random.choice(["cash", "mobile_money", "bank_transfer"]),
-                    reference=f"REF-{random.randint(1000, 9999)}",
-                    notes=f"{p_type.title()} payment",
-                    status="completed",
-                    transaction_date=date
+                    transaction_date=date,
+                    defaults={
+                        'amount': amount,
+                        'payment_method': random.choice(["cash", "mobile_money", "bank_transfer"]),
+                        'reference': f"REF-{random.randint(1000, 9999)}",
+                        'notes': f"{p_type.title()} payment",
+                        'status': "completed"
+                    }
                 )
         total_outgoing = OutgoingPayment.objects.filter(user=user).count()
         self.stdout.write(f'Created {total_outgoing} outgoing payments')
