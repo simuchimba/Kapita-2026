@@ -5,8 +5,7 @@
 #   1. Create a free PostgreSQL database at https://neon.tech
 #   2. Copy the connection string from Neon (looks like postgresql://...)
 #   3. Deploy this blueprint, then set DATABASE_URL in Render Environment settings
-#   4. Set ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS, and CSRF_TRUSTED_ORIGINS
-#   5. After first deploy, go to Shell in Render and run: python manage.py create_admin
+#   4. After first deploy, go to Shell in Render and run: python manage.py create_admin
 #
 # Optional: Deploy frontend to Vercel with VITE_API_URL set to your Render API URL
 
@@ -45,15 +44,6 @@ services:
       - key: JWT_REFRESH_TOKEN_LIFETIME
         value: "1440"
         description: "Refresh token lifetime in minutes (24 hours)"
-      - key: ALLOWED_HOSTS
-        sync: false
-        description: "Your Render domain (e.g., kapita-api.onrender.com)"
-      - key: CORS_ALLOWED_ORIGINS
-        sync: false
-        description: "Frontend URL (e.g., https://kapita-frontend.vercel.app)"
-      - key: CSRF_TRUSTED_ORIGINS
-        sync: false
-        description: "Same as CORS_ALLOWED_ORIGINS"
       - key: OPENROUTER_API_KEY
         sync: false
         description: "Optional: OpenRouter API key for AI features"
@@ -69,6 +59,8 @@ services:
       - key: OPENROUTER_VOICE
         sync: false
         description: "Optional: OpenRouter TTS voice name"
+      - key: OPENROUTER_SITE_URL
+        value: "https://kapita.online"
       - key: RESEND_API_KEY
         sync: false
         description: "Optional: Resend API key for email"
