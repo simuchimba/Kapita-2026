@@ -60,7 +60,16 @@ export default function AdminLayout() {
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between border-b border-gray-200 px-5">
             <Link to="/admin/overview" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
+              <img
+                src="/logo1.png"
+                alt="Kapita Logo"
+                className="h-9 w-auto object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                  e.target.nextElementSibling.style.display = 'flex'
+                }}
+              />
+              <div className="hidden h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
                 K
               </div>
               <div>
