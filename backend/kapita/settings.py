@@ -4,11 +4,14 @@ Django settings for kapita project.
 
 from pathlib import Path
 from datetime import timedelta
-from decouple import config
+from decouple import config, AutoConfig
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Explicitly set decouple to look for .env in BASE_DIR (backend directory)
+config = AutoConfig(search_path=BASE_DIR)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
@@ -96,6 +99,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'kapita.wsgi.application'
+
+# Email configuration
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # Database
 # Priority: DATABASE_URL (Neon/Supabase/Railway) > DB_ENGINE config > local SQLite
