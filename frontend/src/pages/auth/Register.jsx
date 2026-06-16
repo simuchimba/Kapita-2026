@@ -42,7 +42,7 @@ export default function Register() {
 
     const result = await register(formData)
     if (result.success) {
-      navigate('/login')
+      navigate(`/verify-email?email=${encodeURIComponent(result.email)}`)
     } else {
       setErrors(result.error || {})
     }

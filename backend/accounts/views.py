@@ -19,18 +19,17 @@ User = get_user_model()
 
 
 def send_verification_email(user):
-    """Send verification email to user"""
-    token = user.generate_email_verification_token()
-    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    """Send verification email with 6-digit code to user"""
+    code = user.generate_email_verification_code()
     subject = "Verify your Kapita account"
     message = f"""
 Hi {user.first_name or user.username},
 
-Thank you for signing up for Kapita! Please verify your email address by clicking the link below:
+Thank you for signing up for Kapita! Your verification code is:
 
-{verification_url}
+{code}
 
-This link will expire in 24 hours.
+This code will expire in 10 minutes.
 
 If you didn't create this account, you can ignore this email.
 
@@ -59,9 +58,17 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        # Disable email verification for testing
-        user.email_verified = True
-        user.save()
+        # Send verification email
+        send_verification_email(user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(
+            {"detail": "Account created successfully. Please check your email for the verification code.", "email": serializer.data['email']},
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -129,31 +136,39 @@ def get_user_info(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_email(request):
-    """Verify email using token"""
-    token = request.data.get('token')
-    if not token:
+    """Verify email using 6-digit code"""
+    email = request.data.get('email')
+    code = request.data.get('code')
+    
+    if not email or not code:
         return Response(
-            {"detail": "Token is required"},
+            {"detail": "Email and verification code are required"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
-        user = User.objects.get(email_verification_token=token)
+        user = User.objects.get(email=email)
     except User.DoesNotExist:
         return Response(
-            {"detail": "Invalid token"},
+            {"detail": "User with this email not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if user.email_verified:
+        return Response(
+            {"detail": "Email is already verified"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if not user.is_email_verification_token_valid(token):
+    if not user.is_email_verification_code_valid(code):
         return Response(
-            {"detail": "Token has expired"},
+            {"detail": "Invalid or expired verification code"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
     user.email_verified = True
-    user.email_verification_token = None
-    user.email_verification_token_expires_at = None
+    user.email_verification_code = None
+    user.email_verification_code_expires_at = None
     user.save()
 
     return Response(
@@ -165,7 +180,7 @@ def verify_email(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def resend_verification_email(request):
-    """Resend verification email"""
+    """Resend verification email with new code"""
     email = request.data.get('email')
     if not email:
         return Response(
@@ -189,6 +204,6 @@ def resend_verification_email(request):
 
     send_verification_email(user)
     return Response(
-        {"detail": "Verification email sent"},
+        {"detail": "Verification email sent with a new code"},
         status=status.HTTP_200_OK
     )

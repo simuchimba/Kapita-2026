@@ -64,9 +64,9 @@ export const useAuthStore = create((set, get) => ({
   register: async (userData) => {
     set({ loading: true, error: null })
     try {
-      await authAPI.register(userData)
+      const response = await authAPI.register(userData)
       set({ loading: false })
-      return { success: true }
+      return { success: true, email: response.data.email }
     } catch (error) {
       set({
         error: error.response?.data || 'Registration failed',

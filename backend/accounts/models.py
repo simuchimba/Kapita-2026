@@ -1,3 +1,4 @@
+import random
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -20,8 +21,8 @@ class User(AbstractUser):
     logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
     # Email verification
     email_verified = models.BooleanField(default=False)
-    email_verification_token = models.CharField(max_length=255, blank=True, null=True, unique=True)
-    email_verification_token_expires_at = models.DateTimeField(blank=True, null=True)
+    email_verification_code = models.CharField(max_length=6, blank=True, null=True)
+    email_verification_code_expires_at = models.DateTimeField(blank=True, null=True)
     # Receipt / business details shown on customer PDF receipts
     address = models.TextField(blank=True, null=True)
     website = models.CharField(max_length=255, blank=True, null=True)
@@ -58,17 +59,17 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
-    def generate_email_verification_token(self):
-        """Generate a new email verification token that expires in 24 hours"""
-        self.email_verification_token = get_random_string(64)
-        self.email_verification_token_expires_at = now() + timedelta(hours=24)
+    def generate_email_verification_code(self):
+        """Generate a new 6-digit email verification code that expires in 10 minutes"""
+        self.email_verification_code = ''.join([str(random.randint(0,9)) for _ in range(6)])
+        self.email_verification_code_expires_at = now() + timedelta(minutes=10)
         self.save()
-        return self.email_verification_token
+        return self.email_verification_code
 
-    def is_email_verification_token_valid(self, token):
-        """Check if a verification token is valid"""
+    def is_email_verification_code_valid(self, code):
+        """Check if a verification code is valid"""
         return (
-            self.email_verification_token == token and
-            self.email_verification_token_expires_at and
-            self.email_verification_token_expires_at > now()
+            self.email_verification_code == code and
+            self.email_verification_code_expires_at and
+            self.email_verification_code_expires_at > now()
         )

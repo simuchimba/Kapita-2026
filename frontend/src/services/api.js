@@ -104,7 +104,7 @@ export const authAPI = {
   updateReceiptSettings: (data) => api.put('/auth/receipt-settings/', data),
   updateProfile: (data) => api.put('/auth/profile/', data),
   changePassword: (data) => api.post('/auth/change-password/', data),
-  verifyEmail: (token) => api.post('/auth/verify-email/', { token }),
+  verifyEmail: (email, code) => api.post('/auth/verify-email/', { email, code }),
   resendVerification: (email) => api.post('/auth/resend-verification/', { email }),
 }
 
