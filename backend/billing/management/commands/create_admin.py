@@ -10,7 +10,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--username', default='admin')
         parser.add_argument('--email', default='admin@kapita.app')
-        parser.add_argument('--password', default='admin12345')
+        parser.add_argument('--password', default='admin123')
 
     def handle(self, *args, **options):
         username = options['username']
@@ -19,12 +19,13 @@ class Command(BaseCommand):
 
         user, created = User.objects.get_or_create(
             username=username,
-            defaults={'email': email, 'is_staff': True, 'is_superuser': True},
+            defaults={'email': email, 'is_staff': True, 'is_superuser': True, 'email_verified': True},
         )
         if not created:
             user.is_staff = True
             user.is_superuser = True
             user.email = email
+            user.email_verified = True
 
         user.set_password(password)
         user.save()
