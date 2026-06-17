@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import AuthPageLayout from '../../components/auth/AuthPageLayout'
 import { AuthFooterLinks, AuthLink } from '../../components/auth/AuthFooter'
 import { useAuthStore } from '../../store/authStore'
