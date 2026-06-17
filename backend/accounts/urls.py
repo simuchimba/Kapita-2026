@@ -12,6 +12,7 @@ from .views import (
     resend_verification_email,
     request_password_reset,
     confirm_password_reset,
+    send_test_email,
     CustomTokenObtainPairView,
 )
 
@@ -27,4 +28,5 @@ urlpatterns = [
     path('resend-verification/', resend_verification_email, name='resend_verification'),
     path('password-reset/request/', request_password_reset, name='request_password_reset'),
     path('password-reset/confirm/', confirm_password_reset, name='confirm_password_reset'),
+    path('send-test-email/', send_test_email, name='send_test_email'),
 ]

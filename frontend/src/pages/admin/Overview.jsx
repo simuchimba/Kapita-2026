@@ -10,7 +10,7 @@ import {
   Users,
   Wallet,
   MessageSquare,
-  Download,
+  Mail,
 } from 'lucide-react'
 import {
   Bar,
@@ -29,7 +29,7 @@ import {
 } from 'recharts'
 import Card from '../../components/Card'
 import Loading from '../../components/Loading'
-import { billingAPI } from '../../services/api'
+import { billingAPI, authAPI } from '../../services/api'
 import { formatStatus } from './utils'
 import { CHART_COLORS, chartAxisStroke, chartGridStroke, chartTooltipStyle } from './chartTheme'
 
@@ -68,6 +68,9 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [overview, setOverview] = useState(null)
+  const [testEmailLoading, setTestEmailLoading] = useState(false)
+  const [testEmailMessage, setTestEmailMessage] = useState('')
+  const [testEmailError, setTestEmailError] = useState('')
 
   const loadOverview = useCallback(async () => {
     setLoading(true)
@@ -82,6 +85,20 @@ export default function AdminOverview() {
       setLoading(false)
     }
   }, [])
+
+  const handleSendTestEmail = async () => {
+    setTestEmailLoading(true)
+    setTestEmailMessage('')
+    setTestEmailError('')
+    try {
+      const res = await authAPI.sendTestEmail()
+      setTestEmailMessage(res.data.detail)
+    } catch (err) {
+      setTestEmailError(err.response?.data?.detail || 'Failed to send test email')
+    } finally {
+      setTestEmailLoading(false)
+    }
+  }
 
   useEffect(() => {
     loadOverview()
@@ -105,6 +122,15 @@ export default function AdminOverview() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSendTestEmail}
+            disabled={testEmailLoading}
+            className="btn btn-secondary inline-flex items-center gap-2"
+          >
+            <Mail className="h-4 w-4" />
+            {testEmailLoading ? 'Sending...' : 'Test Email'}
+          </button>
           <Link to="/app/chat" className="btn btn-primary inline-flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Chat with Mumu
@@ -115,6 +141,18 @@ export default function AdminOverview() {
           </button>
         </div>
       </div>
+
+      {testEmailMessage && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+          {testEmailMessage}
+        </div>
+      )}
+
+      {testEmailError && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          {testEmailError}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
