@@ -23,9 +23,21 @@ class Command(BaseCommand):
             admin.last_name = 'Admin'
             admin.is_staff = True
             admin.is_superuser = True
+            admin.email_verified = True
             admin.save()
             self.stdout.write(self.style.SUCCESS('Successfully created superuser'))
             self.stdout.write('  Username: admin')
             self.stdout.write('  Password: admin123')
         else:
-            self.stdout.write(self.style.WARNING('Superuser already exists'))
+            # Update existing admin user
+            admin = User.objects.get(username='admin')
+            admin.first_name = 'Kapita'
+            admin.last_name = 'Admin'
+            admin.is_staff = True
+            admin.is_superuser = True
+            admin.email_verified = True
+            admin.set_password('admin123')
+            admin.save()
+            self.stdout.write(self.style.SUCCESS('Successfully updated superuser'))
+            self.stdout.write('  Username: admin')
+            self.stdout.write('  Password: admin123')
