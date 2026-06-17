@@ -108,6 +108,7 @@ export const authAPI = {
   resendVerification: (email) => api.post('/auth/resend-verification/', { email }),
   requestPasswordReset: (email) => api.post('/auth/password-reset/request/', { email }),
   confirmPasswordReset: (email, code, newPassword) => api.post('/auth/password-reset/confirm/', { email, code, new_password: newPassword }),
+  sendTestEmail: () => api.post('/auth/send-test-email/'),
 }
 
 // Products API

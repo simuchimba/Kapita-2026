@@ -602,3 +602,132 @@ def confirm_password_reset(request):
         {"detail": "Password has been reset successfully. You can now log in with your new password"},
         status=status.HTTP_200_OK
     )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_test_email(request):
+    """Send a test email to the authenticated user's email address"""
+    try:
+        user = request.user
+        subject = "Kapita Test Email"
+        plain_message = f"""Hello {user.first_name or user.username}!
+
+This is a test email from your Kapita installation. If you're receiving this, your email configuration is working correctly!
+
+Best regards,
+The Kapita Team
+""".strip()
+        
+        html_message = f"""
+<!DOCTYPE html>
+<html lang="en" style="margin: 0; padding: 0;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapita Test Email</title>
+    <style>
+        body {{
+            background-color: #f5f7fa;
+            padding: 40px 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        }}
+        .email-header {{
+            background-color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }}
+        .logo {{
+            font-size: 32px;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 10px;
+        }}
+        .email-body {{
+            background-color: #ffffff;
+            padding: 40px 30px;
+        }}
+        .greeting {{
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }}
+        .message {{
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+        }}
+        .success-box {{
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }}
+        .success-text {{
+            color: #065f46;
+            font-weight: 600;
+            font-size: 18px;
+        }}
+        .footer {{
+            background-color: #f8fafc;
+            padding: 30px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="logo">Kapita</div>
+            <p style="color: #94a3b8; font-size: 14px;">Test Email Configuration</p>
+        </div>
+        <div class="email-body">
+            <div class="greeting">Hello {user.first_name or user.username}!</div>
+            <p class="message">This is a test email from your Kapita installation. If you're reading this, your email configuration is working perfectly!</p>
+            
+            <div class="success-box">
+                <div class="success-text">✅ Email Setup Successful!</div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Best regards,</p>
+            <p><span style="color: #667eea; font-weight: 600;">The Kapita Team</span></p>
+        </div>
+    </div>
+</body>
+</html>
+        """.strip()
+
+        from django.core.mail import EmailMultiAlternatives
+        msg = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+        )
+        msg.attach_alternative(html_message, "text/html")
+        msg.send(fail_silently=False)
+
+        return Response(
+            {"detail": f"Test email sent successfully to {user.email}!"},
+            status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(f"Error sending test email: {e}")
+        return Response(
+            {"detail": f"Failed to send test email: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
