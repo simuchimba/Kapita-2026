@@ -11,8 +11,6 @@ EXEMPT_PATH_PREFIXES = (
     '/api/auth/profile/',
     '/api/auth/receipt-settings/',
     '/api/auth/change-password/',
-    '/api/auth/verify-email/',
-    '/api/auth/resend-verification/',
     '/api/billing/submit-proof/',
     '/api/billing/me/',
     '/api/billing/history/',

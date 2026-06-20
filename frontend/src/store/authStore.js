@@ -49,21 +49,6 @@ export const useAuthStore = create((set, get) => ({
 
             return { success: true, user: profileResponse.data }
         } catch (error) {
-            // Check if it's the email not verified error
-            if (error.response?.data?.email_verified === false) {
-                set({
-                    error: error.response.data.detail,
-                    loading: false,
-                    isAuthenticated: false,
-                })
-                return { 
-                    success: false, 
-                    error: error.response.data, 
-                    emailNotVerified: true,
-                    email: error.response.data.email
-                }
-            }
-            
             const message =
                 error.response?.data?.detail ||
                 (error.request && !error.response

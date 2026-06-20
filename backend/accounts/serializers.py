@@ -17,10 +17,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         password = attrs.get('password')
 
         if username_or_email and password:
-            # Try to find user by email first
             user = User.objects.filter(email=username_or_email).first()
             if not user:
-                # If not found by email, try by username
                 user = User.objects.filter(username=username_or_email).first()
 
             if user and user.check_password(password):
@@ -69,13 +67,13 @@ class UserSerializer(serializers.ModelSerializer):
             'is_staff', 'is_superuser',
             'access_status', 'days_remaining', 'is_expired',
             'is_trial_active', 'is_subscription_active',
-            'email_verified', 'created_at', 'updated_at',
+            'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'is_staff', 'is_superuser',
             'access_status', 'days_remaining', 'is_expired',
             'is_trial_active', 'is_subscription_active',
-            'email_verified', 'created_at', 'updated_at',
+            'created_at', 'updated_at',
         ]
 
     def _summary(self, obj):
@@ -134,21 +132,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer for password change"""
     old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(
-        required=True,
-        validators=[validate_password]
-    )
-
-
-class ResetPasswordRequestSerializer(serializers.Serializer):
-    """Serializer for requesting password reset"""
-    email = serializers.EmailField(required=True)
-
-
-class ResetPasswordConfirmSerializer(serializers.Serializer):
-    """Serializer for confirming password reset"""
-    email = serializers.EmailField(required=True)
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
     new_password = serializers.CharField(
         required=True,
         validators=[validate_password]
