@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react'
-<<<<<<< HEAD
-import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-=======
 import { useNavigate, useSearchParams } from 'react-router-dom'
->>>>>>> 50883fc (removed email verification and forgot password for testing)
 import AuthPageLayout from '../../components/auth/AuthPageLayout'
 import { AuthFooterLinks, AuthLink } from '../../components/auth/AuthFooter'
 import { useAuthStore } from '../../store/authStore'

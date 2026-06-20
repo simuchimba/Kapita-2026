@@ -104,15 +104,6 @@ export const authAPI = {
   updateReceiptSettings: (data) => api.put('/auth/receipt-settings/', data),
   updateProfile: (data) => api.put('/auth/profile/', data),
   changePassword: (data) => api.post('/auth/change-password/', data),
-<<<<<<< HEAD
-  verifyEmail: (email, code) => api.post('/auth/verify-email/', { email, code }),
-  resendVerification: (email) => api.post('/auth/resend-verification/', { email }),
-  requestPasswordReset: (email) => api.post('/auth/password-reset/request/', { email }),
-  confirmPasswordReset: (email, code, newPassword) => api.post('/auth/password-reset/confirm/', { email, code, new_password: newPassword }),
-  sendTestEmail: () => api.post('/auth/send-test-email/'),
-=======
-
->>>>>>> 50883fc (removed email verification and forgot password for testing)
 }
 
 // Products API
