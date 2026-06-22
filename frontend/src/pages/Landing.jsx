@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom'
-import LandingAuthNav from '../components/LandingAuthNav'
 import LandingAuthNavLegacy from '../components/LandingAuthNavLegacy'
-import { isClerkEnabled } from '../config/auth'
 import {
   BarChart3,
   Package,
@@ -68,7 +66,7 @@ function FloatingNavbar() {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            {isClerkEnabled ? <LandingAuthNav /> : <LandingAuthNavLegacy />}
+            <LandingAuthNavLegacy />
           </div>
         </nav>
       </div>

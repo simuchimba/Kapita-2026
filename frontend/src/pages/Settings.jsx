@@ -5,7 +5,6 @@ import PasswordInput from '../components/PasswordInput'
 import { useAuthStore } from '../store/authStore'
 import { authAPI } from '../services/api'
 import api from '../services/api'
-import { isClerkEnabled } from '../config/auth'
 
 const emptyReceiptForm = {
   business_name: '',
@@ -551,19 +550,8 @@ export default function Settings() {
 
       {activeTab === 'security' && (
         <Card>
-          {isClerkEnabled ? (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Account Security</h3>
-              <p className="text-sm text-gray-600">
-                Password and sign-in methods are managed through your Clerk account. Use the
-                account menu or Clerk profile to update your password or enable two-factor
-                authentication.
-              </p>
-            </div>
-          ) : (
-            <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label className="label">Current Password</label>
               <PasswordInput
@@ -598,8 +586,6 @@ export default function Settings() {
               {loading ? 'Changing...' : 'Change Password'}
             </button>
           </form>
-            </>
-          )}
         </Card>
       )}
     </div>

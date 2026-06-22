@@ -22,16 +22,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 user = User.objects.filter(username=username_or_email).first()
 
             if user and user.check_password(password):
-                # Check if email is verified, but skip for staff/superusers
-                if not user.email_verified and not user.is_staff and not user.is_superuser:
-                    raise serializers.ValidationError(
-                        {
-                            'detail': 'Please verify your email before logging in.',
-                            'email_verified': False,
-                            'email': user.email
-                        },
-                        code='email_not_verified'
-                    )
                 refresh = self.get_token(user)
                 data = {}
                 data['refresh'] = str(refresh)

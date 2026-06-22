@@ -51,7 +51,7 @@ export default function AuthPageLayout({
           {showBadges && variant === 'default' && <AuthTrustBadges />}
         </header>
 
-        <div className={`auth-card clerk-kapita ${variant === 'admin' ? 'auth-card-admin' : ''}`}>
+        <div className={`auth-card ${variant === 'admin' ? 'auth-card-admin' : ''}`}>
           <div className="auth-card-accent" aria-hidden />
           <div className="auth-card-body">{children}</div>
         </div>
