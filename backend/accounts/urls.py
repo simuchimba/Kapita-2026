@@ -8,14 +8,6 @@ from .views import (
     ReceiptSettingsView,
     ChangePasswordView,
     get_user_info,
-
-    verify_email,
-    resend_verification_email,
-    request_password_reset,
-    confirm_password_reset,
-    send_test_email,
-
-
     CustomTokenObtainPairView,
 )
 
