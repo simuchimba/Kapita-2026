@@ -1,8 +1,6 @@
 import { create } from 'zustand'
 import { authAPI } from '../services/api'
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
 function profileErrorMessage(error) {
   if (error.response?.data?.detail) {
     return typeof error.response.data.detail === 'string'

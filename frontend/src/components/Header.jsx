@@ -1,9 +1,7 @@
 import { Menu, Bell, LogOut, ShieldCheck } from 'lucide-react'
-import { UserButton } from '@clerk/react'
 import { useAuthStore } from '../store/authStore'
 import { useState, useEffect } from 'react'
 import { notificationsAPI } from '../services/api'
-import { isClerkEnabled } from '../config/auth'
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuthStore()
@@ -65,17 +63,13 @@ export default function Header({ onMenuClick }) {
             )}
           </button>
 
-          {isClerkEnabled ? (
-            <UserButton afterSignOutUrl="/login" />
-          ) : (
-            <button
-              onClick={() => logout()}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          )}
+          <button
+            onClick={() => logout()}
+            className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </header>

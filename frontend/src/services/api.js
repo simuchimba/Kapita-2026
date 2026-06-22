@@ -11,18 +11,14 @@ const api = axios.create({
   },
 })
 
-async function resolveAuthToken() {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    return token
-  }
-  return null
+function resolveAuthToken() {
+  return localStorage.getItem('access_token') || null
 }
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  async (config) => {
-    const token = await resolveAuthToken()
+  (config) => {
+    const token = resolveAuthToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

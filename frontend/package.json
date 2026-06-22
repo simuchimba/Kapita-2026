@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@clerk/react": "^6.7.2",
     "@ricky0123/vad-react": "^0.0.36",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",

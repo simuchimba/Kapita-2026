@@ -8,36 +8,34 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+DEFAULT_PASSWORD = 'Admin@2026!'
+
 
 class Command(BaseCommand):
-    help = 'Creates a default superuser (admin/admin123) if not exists'
+    help = f'Creates or updates the default superuser (admin / {DEFAULT_PASSWORD})'
 
     def handle(self, *args, **options):
-        if not User.objects.filter(username='admin').exists():
-            admin = User.objects.create_superuser(
-                username='admin',
-                email='admin@kapita.com',
-                password='admin123'
-            )
+        admin, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@kapita.com',
+                'first_name': 'Kapita',
+                'last_name': 'Admin',
+                'is_staff': True,
+                'is_superuser': True,
+            },
+        )
+
+        if not created:
             admin.first_name = 'Kapita'
             admin.last_name = 'Admin'
             admin.is_staff = True
             admin.is_superuser = True
-            admin.email_verified = True
-            admin.save()
-            self.stdout.write(self.style.SUCCESS('Successfully created superuser'))
-            self.stdout.write('  Username: admin')
-            self.stdout.write('  Password: admin123')
-        else:
-            # Update existing admin user
-            admin = User.objects.get(username='admin')
-            admin.first_name = 'Kapita'
-            admin.last_name = 'Admin'
-            admin.is_staff = True
-            admin.is_superuser = True
-            admin.email_verified = True
-            admin.set_password('admin123')
-            admin.save()
-            self.stdout.write(self.style.SUCCESS('Successfully updated superuser'))
-            self.stdout.write('  Username: admin')
-            self.stdout.write('  Password: admin123')
+
+        admin.set_password(DEFAULT_PASSWORD)
+        admin.save()
+
+        action = 'Created' if created else 'Updated'
+        self.stdout.write(self.style.SUCCESS(f'{action} superuser successfully'))
+        self.stdout.write(f'  Username : admin')
+        self.stdout.write(f'  Password : {DEFAULT_PASSWORD}')
