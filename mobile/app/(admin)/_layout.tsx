@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { LayoutDashboard, Users } from '@expo/vector-icons/Lucide';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
@@ -33,7 +33,7 @@ export default function AdminTabs() {
         options={{
           title: 'Overview',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+            <LayoutDashboard size={size} color={color} />
           ),
         }}
       />
@@ -42,7 +42,7 @@ export default function AdminTabs() {
         options={{
           title: 'Users',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+            <Users size={size} color={color} />
           ),
         }}
       />
