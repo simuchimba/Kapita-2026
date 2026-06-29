@@ -72,7 +72,7 @@ export default function AdminLayout() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">Kapita Admin</p>
-                <p className="text-xs text-gray-500">SaaS control panel</p>
+                <p className="text-xs text-gray-500">Control panel</p>
               </div>
             </Link>
             <button type="button" className="lg:hidden text-gray-500" onClick={() => setSidebarOpen(false)}>
@@ -127,7 +127,7 @@ export default function AdminLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block">
-            <p className="text-sm font-medium text-gray-500">Kapita SaaS Administration</p>
+            <p className="text-sm font-medium text-gray-500">Kapita Administration</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-800">
