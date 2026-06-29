@@ -14,15 +14,23 @@ export default function AdminLogin() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
+
     const result = await login(formData)
 
-    if (result.success && result.user?.is_staff) {
-      navigate('/admin/overview')
+    if (!result.success) {
+      // Wrong credentials — show the actual server error
+      setError(result.error?.detail || 'Invalid username or password.')
       return
     }
 
-    logout()
-    setError('Admin access required. Please use an admin account.')
+    if (!result.user?.is_staff) {
+      // Logged in but not an admin — clear the session and tell them
+      await logout()
+      setError('This account does not have admin access. Use the regular login instead.')
+      return
+    }
+
+    navigate('/admin/overview')
   }
 
   return (
@@ -54,6 +62,7 @@ export default function AdminLogin() {
             type="text"
             required
             className="input"
+            placeholder="admin"
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
           />

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquarePlus,
   UploadCloud,
   Users,
   X,
@@ -19,6 +20,7 @@ const navItems = [
   { name: 'Payments', href: '/admin/payments', icon: UploadCloud },
   { name: 'Subscriptions', href: '/admin/subscriptions', icon: BadgeCheck },
   { name: 'Activity', href: '/admin/activity', icon: Activity },
+  { name: 'Feedback', href: '/admin/feedback', icon: MessageSquarePlus },
 ]
 
 export default function AdminLayout() {

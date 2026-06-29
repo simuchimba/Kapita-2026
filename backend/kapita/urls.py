@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/purchase-orders/', include('purchase_orders.urls')),
     path('api/outgoing-payments/', include('outgoing_payments.urls')),
     path('api/quotations/', include('quotations.urls')),
+    path('api/feedback/', include('feedback.urls')),
 ]
 
 if settings.DEBUG:

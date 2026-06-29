@@ -36,6 +36,7 @@ import AdminUsers from './pages/admin/Users'
 import AdminPayments from './pages/admin/Payments'
 import AdminSubscriptions from './pages/admin/Subscriptions'
 import AdminActivity from './pages/admin/Activity'
+import AdminFeedback from './pages/admin/Feedback'
 
 import NotFound from './pages/NotFound'
 
@@ -150,6 +151,7 @@ function App() {
           <Route path="subscriptions" element={<AdminSubscriptions />} />
 
           <Route path="activity" element={<AdminActivity />} />
+          <Route path="feedback" element={<AdminFeedback />} />
         </Route>
 
         <Route

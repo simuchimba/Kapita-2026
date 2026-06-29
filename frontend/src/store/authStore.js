@@ -47,8 +47,10 @@ export const useAuthStore = create((set, get) => ({
 
             return { success: true, user: profileResponse.data }
         } catch (error) {
+            const data = error.response?.data
             const message =
-                error.response?.data?.detail ||
+                data?.detail ||
+                (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : null) ||
                 (error.request && !error.response
                     ? 'Cannot reach the server. Make sure the backend is running on port 8000.'
                     : 'Login failed. Check your username/email and password.')
@@ -58,7 +60,7 @@ export const useAuthStore = create((set, get) => ({
                 loading: false,
                 isAuthenticated: false,
             })
-            return { success: false, error: error.response?.data || { detail: message } }
+            return { success: false, error: { detail: message } }
         }
     },
 

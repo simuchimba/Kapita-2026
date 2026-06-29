@@ -303,4 +303,18 @@ export const quotationsAPI = {
   getPDF: (id) => api.get(`/quotations/${id}/pdf/`, { responseType: 'blob' }),
 }
 
+// Beta Feedback API
+export const feedbackAPI = {
+  // User-facing
+  submit: (data) => api.post('/feedback/', data),
+  getMine: () => api.get('/feedback/mine/'),
+  // Admin-facing
+  getAll: (params) => api.get('/feedback/admin/', { params }),
+  getStats: () => api.get('/feedback/admin/stats/'),
+  updateStatus: (id, data) => api.patch(`/feedback/admin/${id}/`, data),
+  delete: (id) => api.delete(`/feedback/admin/${id}/`),
+  exportCsv: (params) =>
+    api.get('/feedback/admin/export/csv/', { params, responseType: 'blob' }),
+}
+
 export default api

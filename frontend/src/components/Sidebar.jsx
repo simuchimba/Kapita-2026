@@ -21,6 +21,7 @@ import {
   ArrowRightCircle,
   TrendingDown
 } from 'lucide-react'
+import FeedbackPanel from './FeedbackPanel'
 
 const businessNavigation = [
   { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
@@ -181,9 +182,10 @@ export default function Sidebar({ open, setOpen }) {
             </div>
           </nav>
 
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 space-y-2">
+            <FeedbackPanel />
             <p className="text-xs text-gray-500 text-center">
-              Business & personal, kept separate
+              Business &amp; personal, kept separate
             </p>
           </div>
         </div>
