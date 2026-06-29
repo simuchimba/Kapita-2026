@@ -7,12 +7,15 @@ interface User {
   business_name: string;
   phone?: string;
   address?: string;
+  is_staff?: boolean;
+  is_superuser?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isStaff: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<void>;
   register: (
     username: string,
@@ -93,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isLoading,
         isAuthenticated: !!user,
+        isStaff: !!user?.is_staff || !!user?.is_superuser,
         login,
         register,
         logout,

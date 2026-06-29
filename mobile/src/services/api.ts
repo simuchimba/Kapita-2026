@@ -495,6 +495,11 @@ export const billingAPI = {
     const response = await api.get('/billing/history/');
     return response.data;
   },
+
+  getAdminOverview: async () => {
+    const response = await api.get('/billing/admin/overview/');
+    return response.data;
+  },
 };
 
 // Personal Finance API
