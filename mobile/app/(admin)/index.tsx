@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { billingAPI } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter } from 'expo-router';
+import { LogOut } from 'lucide-react-native';
 
 interface OverviewData {
   total_users: number;
@@ -56,7 +57,7 @@ export default function AdminOverview() {
             router.replace('/admin/login');
           }}
         >
-          <Text style={styles.logoutText}>Logout</Text>
+          <LogOut size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -102,8 +103,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#111' },
-  logoutButton: { backgroundColor: '#ef4444', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  logoutText: { color: '#fff', fontWeight: 'bold' },
+  logoutButton: { backgroundColor: '#ef4444', padding: 12, borderRadius: 8 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   statCard: { flex: 1, minWidth: '45%', backgroundColor: '#fff', padding: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   statLabel: { fontSize: 14, color: '#666', marginBottom: 8 },

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
-import { LayoutDashboard, Users } from '@expo/vector-icons/Lucide';
+import { LayoutDashboard, Users } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
