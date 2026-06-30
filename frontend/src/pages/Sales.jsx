@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Tag, Percent, ScanLine, Camera, Zap, ShoppingCart, X, Search, Check } from 'lucide-react'
+import { Plus, Tag, Percent, ScanLine, Camera, Zap, ShoppingCart, X, Search, Check, Minus, Plus as PlusIcon, Trash2, ChevronDown } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -26,6 +26,12 @@ export default function Sales() {
   })
   const [manualBarcode, setManualBarcode] = useState('')
   const [searching, setSearching] = useState(false)
+
+  const [cart, setCart] = useState([])
+  const [cartPaymentType, setCartPaymentType] = useState('cash')
+  const [cartCustomer, setCartCustomer] = useState('')
+  const [cartDeposit, setCartDeposit] = useState('0')
+  const [cartDueDate, setCartDueDate] = useState('')
 
   const buildSalePayload = () => ({
     product: Number(formData.product),
@@ -75,17 +81,50 @@ export default function Sales() {
     }
   }
 
+  const addToCart = useCallback((product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product_id === product.id)
+      if (existing) {
+        return prev.map(item =>
+          item.product_id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      }
+      return [...prev, {
+        product_id: product.id,
+        name: product.name,
+        sku: product.sku,
+        barcode: product.barcode,
+        quantity: 1,
+        unit_price: parseFloat(product.selling_price || 0),
+        currency: product.currency || 'ZMW',
+      }]
+    })
+  }, [])
+
+  const updateCartQty = useCallback((productId, delta) => {
+    setCart(prev => {
+      const item = prev.find(i => i.product_id === productId)
+      if (!item) return prev
+      const newQty = item.quantity + delta
+      if (newQty <= 0) return prev.filter(i => i.product_id !== productId)
+      return prev.map(i => i.product_id === productId ? { ...i, quantity: newQty } : i)
+    })
+  }, [])
+
+  const removeFromCart = useCallback((productId) => {
+    setCart(prev => prev.filter(i => i.product_id !== productId))
+  }, [])
+
   const handleBarcodeResult = useCallback((product) => {
     if (product && product.id) {
-      setFormData(prev => ({
-        ...prev, product: product.id, unit_price: product.selling_price || prev.unit_price, quantity: '1',
-      }))
+      addToCart(product)
       setManualBarcode('')
-      setScanSuccess(`Scanned: ${product.name} — ${product.currency || 'ZMW'} ${parseFloat(product.selling_price || 0).toFixed(2)}`)
-      setTimeout(() => setScanSuccess(''), 5000)
-      setTimeout(() => qtyRef.current?.focus(), 200)
+      setScanSuccess(`Scanned: ${product.name}`)
+      setTimeout(() => setScanSuccess(''), 3000)
     }
-  }, [])
+  }, [addToCart])
 
   const handleManualBarcode = async () => {
     const code = manualBarcode.trim()
@@ -129,6 +168,46 @@ export default function Sales() {
     }
   }
 
+  const cartTotal = cart.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
+
+  const handleCartComplete = async () => {
+    if (cart.length === 0) return
+    if (cartPaymentType === 'credit' && !cartCustomer) {
+      alert('Please select a customer for credit sales.')
+      return
+    }
+    setSaleLoading(true)
+    let successCount = 0
+    for (const item of cart) {
+      try {
+        await salesAPI.create({
+          product: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          payment_type: cartPaymentType,
+          customer: cartCustomer ? Number(cartCustomer) : null,
+          deposit_amount: cartPaymentType === 'credit' ? Number(cartDeposit || 0) : 0,
+          due_date: cartPaymentType === 'credit' && cartDueDate ? cartDueDate : null,
+        })
+        successCount++
+      } catch (error) {
+        alert(`Failed to sell ${item.name}: ${getErrorMessage(error)}`)
+        break
+      }
+    }
+    if (successCount > 0) {
+      setCart([])
+      setCartPaymentType('cash')
+      setCartCustomer('')
+      setCartDeposit('0')
+      setCartDueDate('')
+      setScanSuccess(`${successCount} sale(s) completed!`)
+      setTimeout(() => setScanSuccess(''), 4000)
+      fetchData()
+    }
+    setSaleLoading(false)
+  }
+
   const handleFullSubmit = async (e) => {
     e.preventDefault()
     setSaleLoading(true)
@@ -164,6 +243,7 @@ export default function Sales() {
       const response = await customersAPI.create(newCustomerData)
       setCustomers([...customers, response.data])
       setFormData({ ...formData, customer: response.data.id })
+      setCartCustomer(String(response.data.id))
       setNewCustomerData({ name: '', phone: '', email: '', address: '' })
       setShowAddCustomer(false)
       alert('Customer added successfully!')
@@ -263,20 +343,19 @@ export default function Sales() {
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <Zap size={20} className="text-emerald-600" />
-            Quick Scan & Sell
+            Quick Scan & Cart
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <p className="text-sm text-gray-500">Scan a barcode with your camera</p>
-              <BarcodeScanner onProductFound={handleBarcodeResult} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-3">
+              <p className="text-sm text-gray-500">Camera stays on — scan multiple items</p>
+              <BarcodeScanner onProductFound={handleBarcodeResult} continuous />
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">Or type a barcode number</p>
+              <p className="text-sm text-gray-500">Or type barcode</p>
               <div className="flex gap-2">
-                <input
-                  type="text" value={manualBarcode}
+                <input type="text" value={manualBarcode}
                   onChange={e => setManualBarcode(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleManualBarcode()}
                   placeholder="Enter barcode..."
@@ -286,7 +365,7 @@ export default function Sales() {
                   <Search size={18} />
                 </button>
               </div>
-              {!scannedProduct && (
+              {cart.length === 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {products.filter(p => p.barcode).slice(0, 4).map(p => (
                     <button key={p.id} type="button"
@@ -300,95 +379,93 @@ export default function Sales() {
             </div>
           </div>
 
-          {scannedProduct && (
+          {cart.length > 0 && (
             <div className="border-t pt-4 space-y-3">
-              <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-lg text-gray-900">{scannedProduct.name}</p>
-                    <p className="text-sm text-gray-500">
-                      SKU: {scannedProduct.sku} | Barcode: {scannedProduct.barcode || '-'} | Stock: {scannedProduct.quantity}
-                    </p>
-                    <p className="text-lg font-bold text-emerald-700 mt-1">
-                      {scannedProduct.currency || 'ZMW'} {parseFloat(scannedProduct.selling_price).toFixed(2)}
-                    </p>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <ShoppingCart size={20} className="text-emerald-600" />
+                  Cart ({cart.reduce((s, i) => s + i.quantity, 0)} items)
+                </h3>
+                <button onClick={() => setCart([])} className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
+                  <Trash2 size={14} /> Clear all
+                </button>
+              </div>
+
+              <div className="divide-y border rounded-lg">
+                {cart.map(item => (
+                  <div key={item.product_id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      <p className="text-xs text-gray-500">{item.sku} — {item.currency} {item.unit_price.toFixed(2)} ea</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <button onClick={() => updateCartQty(item.product_id, -1)}
+                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">
+                        <Minus size={14} />
+                      </button>
+                      <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
+                      <button onClick={() => updateCartQty(item.product_id, 1)}
+                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">
+                        <PlusIcon size={14} />
+                      </button>
+                      <span className="font-semibold text-sm w-20 text-right">{item.currency} {(item.quantity * item.unit_price).toFixed(2)}</span>
+                      <button onClick={() => removeFromCart(item.product_id)}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50">
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, product: '', unit_price: '' }))}
-                    className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
-                    <X size={14} /> Clear
-                  </button>
-                </div>
+                ))}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="label">Quantity</label>
-                  <input ref={qtyRef} type="number" min="1" required
-                    className="input text-lg font-bold"
-                    value={formData.quantity}
-                    onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-                    onFocus={e => e.target.select()} />
-                </div>
-                <div>
-                  <label className="label">Unit Price ({scannedProduct.currency || 'ZMW'})</label>
-                  <input type="number" step="0.01" required className="input"
-                    value={formData.unit_price}
-                    onChange={e => setFormData({ ...formData, unit_price: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label">Payment</label>
-                  <select className="input" value={formData.payment_type}
-                    onChange={e => setFormData({ ...formData, payment_type: e.target.value })}>
-                    <option value="cash">Cash</option>
-                    <option value="mobile_money">Mobile Money</option>
-                    <option value="credit">Credit</option>
-                  </select>
-                </div>
-              </div>
-
-              {formData.payment_type === 'credit' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="label">Customer *</label>
-                    <select required className="input" value={formData.customer}
-                      onChange={e => setFormData({ ...formData, customer: e.target.value })}>
-                      <option value="">Select customer</option>
-                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <div className="border-t pt-3 space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="label mb-0">Payment</label>
+                    <select className="input text-sm py-1.5" value={cartPaymentType}
+                      onChange={e => setCartPaymentType(e.target.value)}>
+                      <option value="cash">Cash</option>
+                      <option value="mobile_money">Mobile Money</option>
+                      <option value="credit">Credit</option>
                     </select>
-                    <p className="text-xs text-gray-400 mt-1">
-                      <button type="button" onClick={() => setShowAddCustomer(true)}
-                        className="text-emerald-600 hover:underline">+ Add new customer</button>
-                    </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="text-right flex-1">
+                    <p className="text-sm text-gray-500">Total</p>
+                    <p className="text-2xl font-bold text-primary-600">ZMW {cartTotal.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                {cartPaymentType === 'credit' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="label">Customer *</label>
+                      <select required className="input" value={cartCustomer}
+                        onChange={e => setCartCustomer(e.target.value)}>
+                        <option value="">Select customer</option>
+                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        <button type="button" onClick={() => setShowAddCustomer(true)}
+                          className="text-emerald-600 hover:underline">+ Add new customer</button>
+                      </p>
+                    </div>
                     <div>
                       <label className="label">Deposit</label>
-                      <input type="number" step="0.01" className="input" value={formData.deposit_amount}
-                        onChange={e => setFormData({ ...formData, deposit_amount: e.target.value })} />
+                      <input type="number" step="0.01" className="input" value={cartDeposit}
+                        onChange={e => setCartDeposit(e.target.value)} />
                     </div>
                     <div>
                       <label className="label">Due Date</label>
-                      <input type="date" className="input" value={formData.due_date}
-                        onChange={e => setFormData({ ...formData, due_date: e.target.value })} />
+                      <input type="date" className="input" value={cartDueDate}
+                        onChange={e => setCartDueDate(e.target.value)} />
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex justify-between items-center bg-primary-50 p-4 rounded-lg border border-primary-200">
-                <div>
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-primary-600">
-                    {scannedProduct.currency || 'ZMW'} {calculateTotals().total.toLocaleString()}
-                  </p>
-                  {formData.discount_type !== 'none' && calculateTotals().discountAmount > 0 && (
-                    <p className="text-xs text-green-600">-{calculateTotals().discountAmount.toFixed(2)} discount</p>
-                  )}
-                </div>
-                <button onClick={handleQuickSale} disabled={saleLoading}
-                  className="btn btn-primary py-3 px-8 text-lg font-bold inline-flex items-center gap-2">
+                <button onClick={handleCartComplete} disabled={saleLoading || cart.length === 0}
+                  className="btn btn-primary w-full py-3 text-lg font-bold inline-flex items-center justify-center gap-2">
                   <Zap size={20} />
-                  {saleLoading ? 'Selling...' : 'Complete Sale'}
+                  {saleLoading ? `Creating ${cart.length} sale(s)...` : `Complete ${cart.length} Sale(s) — ZMW ${cartTotal.toFixed(2)}`}
                 </button>
               </div>
             </div>

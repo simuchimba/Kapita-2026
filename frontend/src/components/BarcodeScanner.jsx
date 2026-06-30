@@ -4,7 +4,7 @@ import { productsAPI } from '../services/api'
 import { scanVideoFrame } from '../services/barcodeDecoder'
 import { Search, Camera, X, Loader, AlertCircle } from 'lucide-react'
 
-export default function BarcodeScanner({ onProductFound, onClose }) {
+export default function BarcodeScanner({ onProductFound, onClose, continuous = false }) {
   const [manualCode, setManualCode] = useState('')
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
@@ -48,14 +48,14 @@ export default function BarcodeScanner({ onProductFound, onClose }) {
       scanVideoFrame(videoRef.current).then(result => {
         if (result && result.code && result.code !== lastCode) {
           setLastCode(result.code)
-          stopCamera()
+          if (!continuous) stopCamera()
           lookupProduct(result.code)
         }
       }).catch(() => {})
       lastScanTimeRef.current = now
     }
     animFrameRef.current = requestAnimationFrame(frameScanLoop)
-  }, [scanningActive, cameraReady, lastCode])
+  }, [scanningActive, cameraReady, lastCode, continuous])
 
   const startCamera = async () => {
     setError('')
