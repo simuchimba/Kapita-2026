@@ -185,18 +185,27 @@ function decodeEAN8(bars) {
   return digits.join('')
 }
 
+const CODE128_START_B = '211214'
+
 function decodeCode128(bars) {
-  if (bars.length < 30) return null
-  const n = normalizeBars(bars, 0)
-  if (!n || n.length < 6) return null
+  if (bars.length < 18) return null
 
   let result = ''
   let i = 0
   let codeSet = 'B'
 
-  while (i < n.length - 5) {
-    const pattern = n.slice(i, i + 6).join('')
+  while (i < bars.length - 5) {
+    const group = bars.slice(i, i + 6)
+    const total = group.reduce((a, b) => a + b, 0)
+    if (total === 0) { i++; continue }
+
+    const normalized = group.map(b => Math.round(b * 11 / total))
+    const pattern = normalized.join('')
     if (pattern.length !== 6) break
+
+    // Skip Start Code B — ensures proper character alignment
+    if (pattern === CODE128_START_B) { i += 6; continue }
+
     const idx = CODE128_PATTERNS.indexOf(pattern)
     if (idx === -1) {
       if (pattern === '233111' || pattern === '233112') break
@@ -205,15 +214,7 @@ function decodeCode128(bars) {
       continue
     }
 
-    if (idx === 103) { codeSet = 'A'; i += 6; continue }
-    if (idx === 104) { codeSet = 'B'; i += 6; continue }
-    if (idx === 105) { codeSet = 'C'; i += 6; continue }
-    if (idx === 106) break
-
-    if (codeSet === 'A') {
-      if (idx < 64) result += String.fromCharCode(idx + 32)
-      else result += ' '
-    } else if (codeSet === 'B') {
+    if (codeSet === 'B') {
       if (idx < 64) result += String.fromCharCode(idx + 32)
       else result += String.fromCharCode(idx + 32)
     } else {

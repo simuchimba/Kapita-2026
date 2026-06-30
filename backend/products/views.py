@@ -94,36 +94,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         product = self.get_object()
         code = product.barcode or product.sku
         try:
-            import io
-            from PIL import Image, ImageDraw, ImageFont
-            img = Image.new('RGB', (400, 100), 'white')
-            draw = ImageDraw.Draw(img)
-            try:
-                font = ImageFont.truetype("arial.ttf", 20)
-            except (OSError, IOError):
-                font = ImageFont.load_default()
-
-            x = 20
-            bars = []
-            for ch in str(code):
-                v = (ord(ch) % 10) + 1
-                for i in range(v):
-                    bars.append(x + i * 2)
-                x += v * 2 + 2
-
-            draw.rectangle([0, 0, 400, 80], fill='white')
-            for bx in bars:
-                if bx < 400:
-                    draw.rectangle([bx, 5, bx + 2, 70], fill='black')
-
-            bbox = draw.textbbox((0, 0), str(code), font=font)
-            tw = bbox[2] - bbox[0]
-            draw.text(((400 - tw) // 2, 75), str(code), fill='black', font=font)
-
-            buffer = io.BytesIO()
-            img.save(buffer, format='PNG')
-            buffer.seek(0)
+            from .barcode_utils import generate_barcode_image
             from django.http import FileResponse
-            return FileResponse(buffer, content_type='image/png')
+            buf = generate_barcode_image(code)
+            return FileResponse(buf, content_type='image/png')
         except Exception as e:
             return Response({'error': str(e)}, status=500)

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw, Barcode } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -27,6 +27,7 @@ export default function Products() {
   const [showModal, setShowModal] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
+  const [barcodeViewProduct, setBarcodeViewProduct] = useState(null)
   const [formData, setFormData] = useState({
     name: '', category: '', sku: '', barcode: '',
     buying_price: '', selling_price: '', quantity: '',
@@ -185,6 +186,11 @@ export default function Products() {
       header: 'Actions',
       render: (row) => (
         <div className="flex space-x-2">
+          {row.barcode && (
+            <button onClick={() => setBarcodeViewProduct(row)} className="p-1 text-emerald-600 hover:text-emerald-800" title="View barcode">
+              <Barcode className="w-4 h-4" />
+            </button>
+          )}
           <button onClick={() => handleEdit(row)} className="p-1 text-blue-600 hover:text-blue-800">
             <Edit className="w-4 h-4" />
           </button>
@@ -238,6 +244,27 @@ export default function Products() {
       <Card>
         <Table columns={columns} data={filteredProducts} />
       </Card>
+
+      <Modal isOpen={!!barcodeViewProduct} onClose={() => setBarcodeViewProduct(null)}
+        title={barcodeViewProduct ? `Barcode: ${barcodeViewProduct.name}` : ''} size="sm">
+        {barcodeViewProduct && (
+          <div className="text-center space-y-4 py-4">
+            <img src={`/api/products/${barcodeViewProduct.id}/barcode_image/`}
+              alt={`Barcode for ${barcodeViewProduct.name}`}
+              className="mx-auto max-w-full"
+              style={{ imageRendering: 'pixelated' }}
+            />
+            <p className="text-lg font-mono font-bold text-gray-800">{barcodeViewProduct.barcode}</p>
+            <p className="text-sm text-gray-500">{barcodeViewProduct.name} — {barcodeViewProduct.sku}</p>
+            <button onClick={() => {
+              const a = document.createElement('a')
+              a.href = `/api/products/${barcodeViewProduct.id}/barcode_image/`
+              a.download = `barcode_${barcodeViewProduct.sku}.png`
+              a.click()
+            }} className="btn btn-primary mt-2">Download Barcode</button>
+          </div>
+        )}
+      </Modal>
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm() }}
         title={editingProduct ? 'Edit Product' : 'Add New Product'} size="lg">
