@@ -347,16 +347,30 @@ export default function Sales() {
               </div>
 
               {formData.payment_type === 'credit' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
-                    <label className="label">Deposit</label>
-                    <input type="number" step="0.01" className="input" value={formData.deposit_amount}
-                      onChange={e => setFormData({ ...formData, deposit_amount: e.target.value })} />
+                    <label className="label">Customer *</label>
+                    <select required className="input" value={formData.customer}
+                      onChange={e => setFormData({ ...formData, customer: e.target.value })}>
+                      <option value="">Select customer</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      <button type="button" onClick={() => setShowAddCustomer(true)}
+                        className="text-emerald-600 hover:underline">+ Add new customer</button>
+                    </p>
                   </div>
-                  <div>
-                    <label className="label">Due Date</label>
-                    <input type="date" className="input" value={formData.due_date}
-                      onChange={e => setFormData({ ...formData, due_date: e.target.value })} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Deposit</label>
+                      <input type="number" step="0.01" className="input" value={formData.deposit_amount}
+                        onChange={e => setFormData({ ...formData, deposit_amount: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label">Due Date</label>
+                      <input type="date" className="input" value={formData.due_date}
+                        onChange={e => setFormData({ ...formData, due_date: e.target.value })} />
+                    </div>
                   </div>
                 </div>
               )}
