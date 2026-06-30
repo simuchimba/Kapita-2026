@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from products.models import Product
 from customers.models import Customer
 
@@ -98,7 +99,33 @@ class Sale(models.Model):
             return (self.profit / self.total_amount) * 100
         return 0
 
+    def _sync_credit(self):
+        from credits.models import Credit
+        existing = Credit.objects.filter(
+            user=self.user,
+            customer=self.customer,
+            status__in=['pending', 'partial']
+        ).first()
+        if existing:
+            existing.amount_owed += self.total_amount
+            existing.amount_paid += self.deposit_amount
+            if self.due_date and (not existing.due_date or self.due_date > existing.due_date):
+                existing.due_date = self.due_date
+            existing.save()
+        else:
+            Credit.objects.create(
+                user=self.user,
+                customer=self.customer,
+                amount_owed=self.total_amount,
+                amount_paid=self.deposit_amount,
+                currency=self.currency,
+                borrow_date=timezone.now().date(),
+                due_date=self.due_date or timezone.now().date(),
+            )
+
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
+
         # Calculate discount amount
         if self.discount_type == 'percentage':
             self.discount_amount = (self.quantity * self.unit_price * self.discount_value) / 100
@@ -120,3 +147,7 @@ class Sale(models.Model):
         # Update product quantity
         self.product.quantity -= self.quantity
         self.product.save()
+
+        # Auto-create/update Credit record for credit sales
+        if is_new and self.payment_type == 'credit' and self.customer:
+            self._sync_credit()
