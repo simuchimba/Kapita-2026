@@ -66,6 +66,9 @@ INSTALLED_APPS = [
     'purchase_orders',
     'outgoing_payments',
     'quotations',
+    'currencies',
+    'invoices',
+    'backup',
 ]
 
 MIDDLEWARE = [

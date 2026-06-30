@@ -37,6 +37,11 @@ import AdminPayments from './pages/admin/Payments'
 import AdminSubscriptions from './pages/admin/Subscriptions'
 import AdminActivity from './pages/admin/Activity'
 
+import Invoices from './pages/app/Invoices'
+import InvoiceForm from './pages/app/InvoiceForm'
+import InvoiceDetail from './pages/app/InvoiceDetail'
+import Currencies from './pages/app/Currencies'
+import BackupRestore from './pages/app/BackupRestore'
 import NotFound from './pages/NotFound'
 
 function UserArea({ children }) {
@@ -183,6 +188,12 @@ function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="billing" element={<Billing />} />
           <Route path="personal" element={<PersonalFinance />} />
+          <Route path="invoices" element={<Invoices />} />
+          <Route path="invoices/new" element={<InvoiceForm />} />
+          <Route path="invoices/:id" element={<InvoiceDetail />} />
+          <Route path="invoices/:id/edit" element={<InvoiceForm />} />
+          <Route path="currencies" element={<Currencies />} />
+          <Route path="backup" element={<BackupRestore />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

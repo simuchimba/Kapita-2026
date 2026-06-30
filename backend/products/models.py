@@ -15,6 +15,7 @@ class Product(models.Model):
     quantity = models.IntegerField(default=0)
     minimum_stock = models.IntegerField(default=10)
     supplier = models.CharField(max_length=255, blank=True, null=True)
+    barcode = models.CharField(max_length=100, blank=True, null=True, db_index=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -25,6 +26,7 @@ class Product(models.Model):
         indexes = [
             models.Index(fields=['user', 'category']),
             models.Index(fields=['sku']),
+            models.Index(fields=['barcode']),
         ]
 
     def __str__(self):

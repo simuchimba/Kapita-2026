@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { 
+import {
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
@@ -19,13 +19,18 @@ import {
   PackageOpen,
   UserPlus,
   ArrowRightCircle,
-  TrendingDown
+  TrendingDown,
+  Currency,
+  Cloud,
+  ScanLine,
+  FileSpreadsheet,
 } from 'lucide-react'
 
 const businessNavigation = [
   { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/app/products', icon: Package },
   { name: 'Sales', href: '/app/sales', icon: ShoppingCart },
+  { name: 'Invoices', href: '/app/invoices', icon: FileSpreadsheet },
   { name: 'Quotations', href: '/app/quotations', icon: FileText },
   { name: 'Promotions', href: '/app/promotions', icon: Tag },
   { name: 'Suppliers', href: '/app/suppliers', icon: UserPlus },
@@ -39,6 +44,8 @@ const businessNavigation = [
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Projections', href: '/app/projections', icon: LineChart },
   { name: 'Reports', href: '/app/reports', icon: FileText },
+  { name: 'Currencies', href: '/app/currencies', icon: Currency },
+  { name: 'Backup & Restore', href: '/app/backup', icon: Cloud },
 ]
 
 const personalNavigation = [

@@ -18,6 +18,7 @@ class Credit(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='credits')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='credits')
     amount_owed = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='ZMW')
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     remaining_balance = models.DecimalField(max_digits=12, decimal_places=2)
     borrow_date = models.DateField()

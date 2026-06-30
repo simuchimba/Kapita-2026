@@ -303,4 +303,43 @@ export const quotationsAPI = {
   getPDF: (id) => api.get(`/quotations/${id}/pdf/`, { responseType: 'blob' }),
 }
 
+// Currencies API
+export const currenciesAPI = {
+  getAll: () => api.get('/currencies/'),
+  getOne: (code) => api.get(`/currencies/${code}/`),
+  getRates: () => api.get('/currencies/rates/'),
+  createRate: (data) => api.post('/currencies/rates/', data),
+  updateRate: (id, data) => api.put(`/currencies/rates/${id}/`, data),
+  deleteRate: (id) => api.delete(`/currencies/rates/${id}/`),
+  convert: (params) => api.get('/currencies/rates/convert/', { params }),
+}
+
+// Invoices API
+export const invoicesAPI = {
+  getAll: (params) => api.get('/invoices/', { params }),
+  getOne: (id) => api.get(`/invoices/${id}/`),
+  create: (data) => api.post('/invoices/', data),
+  update: (id, data) => api.put(`/invoices/${id}/`, data),
+  delete: (id) => api.delete(`/invoices/${id}/`),
+  getPDF: (id) => api.get(`/invoices/${id}/pdf/`, { responseType: 'blob' }),
+  markPaid: (id, data) => api.post(`/invoices/${id}/mark_paid/`, data),
+  send: (id) => api.post(`/invoices/${id}/send/`),
+}
+
+// Backup API
+export const backupAPI = {
+  exportBackup: () => api.get('/backup/export/', { responseType: 'blob' }),
+  restoreBackup: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/backup/restore/', formData)
+  },
+}
+
+// Barcode API (via products)
+export const barcodeAPI = {
+  lookup: (code) => api.get('/products/barcode_lookup/', { params: { code } }),
+  getImage: (id) => api.get(`/products/${id}/barcode_image/`, { responseType: 'blob' }),
+}
+
 export default api

@@ -38,6 +38,9 @@ urlpatterns = [
     path('api/purchase-orders/', include('purchase_orders.urls')),
     path('api/outgoing-payments/', include('outgoing_payments.urls')),
     path('api/quotations/', include('quotations.urls')),
+    path('api/currencies/', include('currencies.urls')),
+    path('api/invoices/', include('invoices.urls')),
+    path('api/backup/', include('backup.urls')),
 ]
 
 if settings.DEBUG:

@@ -16,7 +16,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['category']
-    search_fields = ['name', 'sku', 'category', 'supplier']
+    search_fields = ['name', 'sku', 'barcode', 'category', 'supplier']
     ordering_fields = ['name', 'quantity', 'selling_price', 'created_at']
     ordering = ['-created_at']
 
@@ -78,3 +78,52 @@ class ProductViewSet(viewsets.ModelViewSet):
             'total_potential_profit': total_potential_profit,
             'low_stock_count': low_stock_count,
         })
+
+    @action(detail=False, methods=['get'])
+    def barcode_lookup(self, request):
+        code = request.query_params.get('code', '')
+        if not code:
+            return Response({'error': 'barcode code required'}, status=400)
+        product = self.get_queryset().filter(barcode=code).first()
+        if not product:
+            return Response({'error': 'Product not found'}, status=404)
+        return Response(ProductSerializer(product).data)
+
+    @action(detail=True, methods=['get'])
+    def barcode_image(self, request, pk=None):
+        product = self.get_object()
+        code = product.barcode or product.sku
+        try:
+            import io
+            from PIL import Image, ImageDraw, ImageFont
+            img = Image.new('RGB', (400, 100), 'white')
+            draw = ImageDraw.Draw(img)
+            try:
+                font = ImageFont.truetype("arial.ttf", 20)
+            except (OSError, IOError):
+                font = ImageFont.load_default()
+
+            x = 20
+            bars = []
+            for ch in str(code):
+                v = (ord(ch) % 10) + 1
+                for i in range(v):
+                    bars.append(x + i * 2)
+                x += v * 2 + 2
+
+            draw.rectangle([0, 0, 400, 80], fill='white')
+            for bx in bars:
+                if bx < 400:
+                    draw.rectangle([bx, 5, bx + 2, 70], fill='black')
+
+            bbox = draw.textbbox((0, 0), str(code), font=font)
+            tw = bbox[2] - bbox[0]
+            draw.text(((400 - tw) // 2, 75), str(code), fill='black', font=font)
+
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            from django.http import FileResponse
+            return FileResponse(buffer, content_type='image/png')
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
