@@ -32,6 +32,10 @@ export default function Sales() {
   const [cartCustomer, setCartCustomer] = useState('')
   const [cartDeposit, setCartDeposit] = useState('0')
   const [cartDueDate, setCartDueDate] = useState('')
+  const [cartAmountPaid, setCartAmountPaid] = useState('')
+
+  const [formAmountPaid, setFormAmountPaid] = useState('')
+  const [formTotal, setFormTotal] = useState(0)
 
   const buildSalePayload = () => ({
     product: Number(formData.product),
@@ -201,6 +205,7 @@ export default function Sales() {
       setCartCustomer('')
       setCartDeposit('0')
       setCartDueDate('')
+      setCartAmountPaid('')
       setScanSuccess(`${successCount} sale(s) completed!`)
       setTimeout(() => setScanSuccess(''), 4000)
       fetchData()
@@ -229,6 +234,7 @@ export default function Sales() {
       payment_type: 'cash', deposit_amount: '0', due_date: '', notes: '',
       discount_type: 'none', discount_value: '0', promotion_name: '', selected_promotion: '',
     })
+    setFormAmountPaid('')
     setShowAddCustomer(false)
     setNewCustomerData({ name: '', phone: '', email: '', address: '' })
     setManualBarcode('')
@@ -462,6 +468,27 @@ export default function Sales() {
                   </div>
                 )}
 
+                {cartPaymentType !== 'credit' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-3">
+                    <div>
+                      <label className="label">Amount Paid</label>
+                      <input type="number" step="0.01" min="0" className="input text-lg font-bold"
+                        value={cartAmountPaid}
+                        onChange={e => setCartAmountPaid(e.target.value)}
+                        placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="label">Change</label>
+                      <p className={`text-2xl font-bold ${parseFloat(cartAmountPaid || 0) >= cartTotal ? 'text-emerald-600' : 'text-red-500'}`}>
+                        ZMW {Math.max(0, parseFloat(cartAmountPaid || 0) - cartTotal).toFixed(2)}
+                      </p>
+                      {parseFloat(cartAmountPaid || 0) > 0 && parseFloat(cartAmountPaid || 0) < cartTotal && (
+                        <p className="text-xs text-red-500">Short by ZMW {(cartTotal - parseFloat(cartAmountPaid || 0)).toFixed(2)}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <button onClick={handleCartComplete} disabled={saleLoading || cart.length === 0}
                   className="btn btn-primary w-full py-3 text-lg font-bold inline-flex items-center justify-center gap-2">
                   <Zap size={20} />
@@ -593,6 +620,45 @@ export default function Sales() {
                 </div>
               </>
             )}
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="label">Subtotal</label>
+                <p className="text-lg font-bold">ZMW {calculateTotals().subtotal.toFixed(2)}</p>
+              </div>
+              {formData.discount_type !== 'none' && calculateTotals().discountAmount > 0 && (
+                <div>
+                  <label className="label">Discount</label>
+                  <p className="text-lg text-green-600">-ZMW {calculateTotals().discountAmount.toFixed(2)}</p>
+                </div>
+              )}
+              <div>
+                <label className="label">Total</label>
+                <p className="text-2xl font-bold text-primary-600">ZMW {calculateTotals().total.toFixed(2)}</p>
+              </div>
+              {formData.payment_type !== 'credit' && (
+                <>
+                  <div>
+                    <label className="label">Amount Paid</label>
+                    <input type="number" step="0.01" min="0" className="input text-lg font-bold"
+                      value={formAmountPaid}
+                      onChange={e => setFormAmountPaid(e.target.value)}
+                      placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="label">Change</label>
+                    <p className={`text-2xl font-bold ${parseFloat(formAmountPaid || 0) >= calculateTotals().total ? 'text-emerald-600' : 'text-red-500'}`}>
+                      ZMW {Math.max(0, parseFloat(formAmountPaid || 0) - calculateTotals().total).toFixed(2)}
+                    </p>
+                    {parseFloat(formAmountPaid || 0) > 0 && parseFloat(formAmountPaid || 0) < calculateTotals().total && (
+                      <p className="text-xs text-red-500">Short by ZMW {(calculateTotals().total - parseFloat(formAmountPaid || 0)).toFixed(2)}</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div>
