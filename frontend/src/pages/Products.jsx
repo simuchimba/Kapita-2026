@@ -1,11 +1,24 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, Edit, Trash2, ScanLine, Barcode, Camera } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
 import Loading from '../components/Loading'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { productsAPI, barcodeAPI } from '../services/api'
+
+function generateId(prefix = '') {
+  const ts = Date.now().toString(36).toUpperCase()
+  const rand = Math.random().toString(36).substring(2, 5).toUpperCase()
+  return `${prefix}${ts}${rand}`
+}
+
+function generateBarcode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let code = ''
+  for (let i = 0; i < 10; i++) code += chars[Math.floor(Math.random() * chars.length)]
+  return code
+}
 
 export default function Products() {
   const [products, setProducts] = useState([])
@@ -33,12 +46,30 @@ export default function Products() {
     }
   }
 
+  const openAddModal = () => {
+    setEditingProduct(null)
+    setFormData({
+      name: '', category: '', sku: generateId('SKU-'), barcode: generateBarcode(),
+      buying_price: '', selling_price: '', quantity: '',
+      minimum_stock: '10', supplier: '', description: '',
+    })
+    setShowModal(true)
+  }
+
+  const handleGenerateIds = () => {
+    setFormData(prev => ({
+      ...prev,
+      sku: generateId('SKU-'),
+      barcode: generateBarcode(),
+    }))
+  }
+
   const handleScannerResult = useCallback((product) => {
     setShowScanner(false)
     if (product && product.id) {
       handleEdit(product)
     } else if (product && product.barcode) {
-      setFormData(prev => ({ ...prev, barcode: product.barcode, name: product.name || '', sku: product.sku || '' }))
+      setFormData(prev => ({ ...prev, barcode: product.barcode, name: product.name || '', sku: product.sku || generateId('SKU-') }))
       setShowModal(true)
     }
   }, [])
@@ -174,7 +205,7 @@ export default function Products() {
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-600">Manage your inventory</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true) }} className="btn btn-primary flex items-center space-x-2">
+        <button onClick={openAddModal} className="btn btn-primary flex items-center space-x-2">
           <Plus className="w-5 h-5" />
           <span>Add Product</span>
         </button>
@@ -223,23 +254,37 @@ export default function Products() {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
             </div>
             <div>
-              <label className="label">SKU *</label>
-              <input type="text" required className="input" value={formData.sku}
+              <div className="flex items-center justify-between mb-2">
+                <label className="label mb-0">SKU *</label>
+                {!editingProduct && (
+                  <button type="button" onClick={handleGenerateIds}
+                    className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3" /> Regenerate
+                  </button>
+                )}
+              </div>
+              <input type="text" required className="input font-mono text-sm" value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })} />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="label mb-0">Barcode</label>
-                {!showScanner && (
-                  <button type="button" onClick={() => setShowScanner(true)}
+                <div className="flex gap-2">
+                  {!editingProduct && (
+                    <button type="button" onClick={handleGenerateIds}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3" /> Regenerate
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { setShowScanner(true); setShowModal(false) }}
                     className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
                     <ScanLine className="w-3 h-3" /> Scan
                   </button>
-                )}
+                </div>
               </div>
-              <input type="text" className="input" value={formData.barcode}
+              <input type="text" className="input font-mono text-sm" value={formData.barcode}
                 onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                placeholder="EAN-13, Code-128, etc." />
+                placeholder="Auto-generated" />
             </div>
             <div>
               <label className="label">Supplier</label>
