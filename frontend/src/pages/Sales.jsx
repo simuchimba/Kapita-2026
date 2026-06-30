@@ -6,6 +6,7 @@ import Modal from '../components/Modal'
 import Loading from '../components/Loading'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { salesAPI, productsAPI, customersAPI, promotionsAPI, barcodeAPI } from '../services/api'
+import { playBeep } from '../services/beep'
 
 export default function Sales() {
   const [sales, setSales] = useState([])
@@ -124,6 +125,7 @@ export default function Sales() {
   const handleBarcodeResult = useCallback((product) => {
     if (product && product.id) {
       addToCart(product)
+      playBeep()
       setManualBarcode('')
       setScanSuccess(`Scanned: ${product.name}`)
       setTimeout(() => setScanSuccess(''), 3000)
