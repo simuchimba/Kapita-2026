@@ -348,157 +348,143 @@ export default function Sales() {
       )}
 
       <Card>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <Zap size={20} className="text-emerald-600" />
-            Quick Scan & Cart
-          </div>
+        <div className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-4">
+          <Zap size={20} className="text-emerald-600" />
+          Quick Scan & Cart
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-3">
-              <p className="text-sm text-gray-500">Camera stays on — scan multiple items</p>
-              <BarcodeScanner onProductFound={handleBarcodeResult} continuous />
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3 space-y-3">
+            <BarcodeScanner onProductFound={handleBarcodeResult} continuous />
+            <div className="flex gap-2">
+              <input type="text" value={manualBarcode}
+                onChange={e => setManualBarcode(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleManualBarcode()}
+                placeholder="Type barcode and press Enter..."
+                className="input flex-1 font-mono text-sm"
+              />
+              <button onClick={handleManualBarcode} disabled={searching} className="btn btn-primary">
+                <Search size={18} />
+              </button>
             </div>
-
-            <div className="space-y-3">
-              <p className="text-sm text-gray-500">Or type barcode</p>
-              <div className="flex gap-2">
-                <input type="text" value={manualBarcode}
-                  onChange={e => setManualBarcode(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleManualBarcode()}
-                  placeholder="Enter barcode..."
-                  className="input flex-1 font-mono"
-                />
-                <button onClick={handleManualBarcode} disabled={searching} className="btn btn-primary">
-                  <Search size={18} />
-                </button>
-              </div>
-              {cart.length === 0 && (
-                <div className="flex gap-1 flex-wrap">
-                  {products.filter(p => p.barcode).slice(0, 4).map(p => (
-                    <button key={p.id} type="button"
-                      onClick={() => handleBarcodeResult(p)}
-                      className="text-xs bg-gray-100 hover:bg-gray-200 rounded px-2 py-1 text-gray-600">
-                      {p.barcode}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {cart.length > 0 && (
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <ShoppingCart size={20} className="text-emerald-600" />
-                  Cart ({cart.reduce((s, i) => s + i.quantity, 0)} items)
-                </h3>
-                <button onClick={() => setCart([])} className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
-                  <Trash2 size={14} /> Clear all
-                </button>
-              </div>
-
-              <div className="divide-y border rounded-lg">
-                {cart.map(item => (
-                  <div key={item.product_id} className="flex items-center justify-between p-3 hover:bg-gray-50">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.name}</p>
-                      <p className="text-xs text-gray-500">{item.sku} — {item.currency} {item.unit_price.toFixed(2)} ea</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <button onClick={() => updateCartQty(item.product_id, -1)}
-                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">
-                        <Minus size={14} />
-                      </button>
-                      <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
-                      <button onClick={() => updateCartQty(item.product_id, 1)}
-                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">
-                        <PlusIcon size={14} />
-                      </button>
-                      <span className="font-semibold text-sm w-20 text-right">{item.currency} {(item.quantity * item.unit_price).toFixed(2)}</span>
-                      <button onClick={() => removeFromCart(item.product_id)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
+            {cart.length === 0 && (
+              <div className="flex gap-1 flex-wrap">
+                {products.filter(p => p.barcode).slice(0, 4).map(p => (
+                  <button key={p.id} type="button"
+                    onClick={() => handleBarcodeResult(p)}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 rounded px-2 py-1 text-gray-600">
+                    {p.barcode}
+                  </button>
                 ))}
               </div>
+            )}
+          </div>
 
-              <div className="border-t pt-3 space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="label mb-0">Payment</label>
-                    <select className="input text-sm py-1.5" value={cartPaymentType}
+          <div className="lg:col-span-2">
+            {cart.length > 0 ? (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <ShoppingCart size={18} className="text-emerald-600" />
+                    Cart ({cart.reduce((s, i) => s + i.quantity, 0)})
+                  </h3>
+                  <button onClick={() => setCart([])}
+                    className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+                    <Trash2 size={12} /> Clear
+                  </button>
+                </div>
+
+                <div className="divide-y overflow-y-auto flex-1 max-h-[260px]">
+                  {cart.map(item => (
+                    <div key={item.product_id} className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <p className="text-xs font-medium truncate">{item.name}</p>
+                        <p className="text-[10px] text-gray-400">{item.currency} {item.unit_price.toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => updateCartQty(item.product_id, -1)}
+                          className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-xs">
+                          <Minus size={10} />
+                        </button>
+                        <span className="font-bold w-5 text-center text-xs">{item.quantity}</span>
+                        <button onClick={() => updateCartQty(item.product_id, 1)}
+                          className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-xs">
+                          <PlusIcon size={10} />
+                        </button>
+                        <span className="font-semibold text-xs w-16 text-right">{(item.quantity * item.unit_price).toFixed(2)}</span>
+                        <button onClick={() => removeFromCart(item.product_id)}
+                          className="w-5 h-5 flex items-center justify-center text-red-300 hover:text-red-500">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t p-4 space-y-3 bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Payment</span>
+                    <select className="input text-xs py-1 w-36" value={cartPaymentType}
                       onChange={e => setCartPaymentType(e.target.value)}>
                       <option value="cash">Cash</option>
                       <option value="mobile_money">Mobile Money</option>
                       <option value="credit">Credit</option>
                     </select>
                   </div>
-                  <div className="text-right flex-1">
-                    <p className="text-sm text-gray-500">Total</p>
-                    <p className="text-2xl font-bold text-primary-600">ZMW {cartTotal.toFixed(2)}</p>
-                  </div>
-                </div>
 
-                {cartPaymentType === 'credit' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="label">Customer *</label>
-                      <select required className="input" value={cartCustomer}
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="text-xl font-bold text-primary-600">ZMW {cartTotal.toFixed(2)}</p>
+                  </div>
+
+                  {cartPaymentType === 'credit' && (
+                    <div className="space-y-2">
+                      <select required className="input text-xs py-1.5" value={cartCustomer}
                         onChange={e => setCartCustomer(e.target.value)}>
                         <option value="">Select customer</option>
                         {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-[10px] text-gray-400">
                         <button type="button" onClick={() => setShowAddCustomer(true)}
                           className="text-emerald-600 hover:underline">+ Add new customer</button>
                       </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="number" step="0.01" className="input text-xs py-1.5" placeholder="Deposit"
+                          value={cartDeposit} onChange={e => setCartDeposit(e.target.value)} />
+                        <input type="date" className="input text-xs py-1.5" value={cartDueDate}
+                          onChange={e => setCartDueDate(e.target.value)} />
+                      </div>
                     </div>
-                    <div>
-                      <label className="label">Deposit</label>
-                      <input type="number" step="0.01" className="input" value={cartDeposit}
-                        onChange={e => setCartDeposit(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="label">Due Date</label>
-                      <input type="date" className="input" value={cartDueDate}
-                        onChange={e => setCartDueDate(e.target.value)} />
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {cartPaymentType !== 'credit' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-3">
-                    <div>
-                      <label className="label">Amount Paid</label>
-                      <input type="number" step="0.01" min="0" className="input text-lg font-bold"
-                        value={cartAmountPaid}
-                        onChange={e => setCartAmountPaid(e.target.value)}
-                        placeholder="0.00" />
+                  {cartPaymentType !== 'credit' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="number" step="0.01" min="0" className="input text-xs py-1.5" placeholder="Amount paid"
+                        value={cartAmountPaid} onChange={e => setCartAmountPaid(e.target.value)} />
+                      <div className="flex items-center">
+                        <span className={`text-lg font-bold ${parseFloat(cartAmountPaid || 0) >= cartTotal ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {parseFloat(cartAmountPaid || 0) >= cartTotal ? 'Change: ' : 'Short: '}
+                          ZMW {Math.abs(cartTotal - parseFloat(cartAmountPaid || 0)).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <label className="label">Change</label>
-                      <p className={`text-2xl font-bold ${parseFloat(cartAmountPaid || 0) >= cartTotal ? 'text-emerald-600' : 'text-red-500'}`}>
-                        ZMW {Math.max(0, parseFloat(cartAmountPaid || 0) - cartTotal).toFixed(2)}
-                      </p>
-                      {parseFloat(cartAmountPaid || 0) > 0 && parseFloat(cartAmountPaid || 0) < cartTotal && (
-                        <p className="text-xs text-red-500">Short by ZMW {(cartTotal - parseFloat(cartAmountPaid || 0)).toFixed(2)}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                <button onClick={handleCartComplete} disabled={saleLoading || cart.length === 0}
-                  className="btn btn-primary w-full py-3 text-lg font-bold inline-flex items-center justify-center gap-2">
-                  <Zap size={20} />
-                  {saleLoading ? `Creating ${cart.length} sale(s)...` : `Complete ${cart.length} Sale(s) — ZMW ${cartTotal.toFixed(2)}`}
-                </button>
+                  <button onClick={handleCartComplete} disabled={saleLoading || cart.length === 0}
+                    className="btn btn-primary w-full py-2.5 text-sm font-bold inline-flex items-center justify-center gap-2">
+                    <Zap size={16} />
+                    {saleLoading ? 'Processing...' : `Complete (${cartTotal.toFixed(2)})`}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl h-full flex flex-col items-center justify-center text-center p-6 min-h-[200px]">
+                <ShoppingCart size={40} className="text-gray-300 mb-2" />
+                <p className="text-sm text-gray-400 font-medium">Cart is empty</p>
+                <p className="text-xs text-gray-300 mt-1">Scan items to add them here</p>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
 

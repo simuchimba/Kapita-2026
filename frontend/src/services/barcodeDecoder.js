@@ -219,32 +219,49 @@ function isStartB(normalized) {
   return patternDist(normalized, [2, 1, 1, 2, 1, 4]) <= 2
 }
 
+function isStopPattern(norm, len) {
+  const target = [2, 3, 3, 1, 1, 1]
+  if (len < 5 || len > 6) return false
+  let d = 0
+  for (let j = 0; j < len; j++) d += Math.abs(norm[j] - target[j])
+  return d <= (len === 5 ? 3 : 2)
+}
+
 function decodeCode128(bars) {
-  // Minimum: Start(6) + 4 data(24) + Stop(6/-1 trailing space) = ~30
   if (bars.length < 30) return null
 
-  // STRICT: Start Code B must be at position 0
-  const sGroup = bars.slice(0, 6)
-  const sTotal = sGroup.reduce((a, b) => a + b, 0)
-  if (sTotal === 0) return null
-  if (!isStartB(sGroup.map(b => Math.round(b * 11 / sTotal)))) return null
+  // Find Start Code B within first 12 bars (handles noise at edge)
+  let startOffset = -1
+  for (let o = 0; o <= 6 && o < bars.length - 24; o++) {
+    const g = bars.slice(o, o + 6)
+    const t = g.reduce((a, b) => a + b, 0)
+    if (t === 0) continue
+    if (isStartB(g.map(b => Math.round(b * 11 / t)))) { startOffset = o; break }
+  }
+  if (startOffset < 0) return null
 
   let result = ''
-  let i = 6
-  let foundStop = false
+  let i = startOffset + 6
 
-  while (i < bars.length - 5) {
-    const group = bars.slice(i, i + 6)
+  while (i < bars.length) {
+    // Accept 5 or 6 bars for last group (stop may be truncated)
+    const remaining = bars.length - i
+    if (remaining < 5) break
+    const groupLen = Math.min(remaining, 6)
+
+    const group = bars.slice(i, i + groupLen)
     const total = group.reduce((a, b) => a + b, 0)
     if (total === 0) return null
 
     const normalized = group.map(b => Math.round(b * 11 / total))
 
-    // Check for stop pattern
-    if (patternDist(normalized, [2, 3, 3, 1, 1, 1]) <= 2) {
-      foundStop = true
-      break
+    // Check stop pattern (accepts 5 or 6 bars)
+    if (isStopPattern(normalized, groupLen)) {
+      return result.length >= 4 ? result : null
     }
+
+    // Must be exactly 6 bars for data characters
+    if (groupLen < 6) return null
 
     const idx = matchCode128Pattern(normalized)
     if (idx < 0) return null
@@ -254,7 +271,7 @@ function decodeCode128(bars) {
     i += 6
   }
 
-  return result.length >= 4 && foundStop ? result : null
+  return null
 }
 
 export function scanImageData(imageData) {
