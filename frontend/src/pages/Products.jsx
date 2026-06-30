@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw, Barcode } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw, Barcode, Download, Printer, Loader } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -28,6 +28,10 @@ export default function Products() {
   const [showScanner, setShowScanner] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [barcodeViewProduct, setBarcodeViewProduct] = useState(null)
+  const [barcodeImageUrl, setBarcodeImageUrl] = useState(null)
+  const [barcodeLoading, setBarcodeLoading] = useState(false)
+  const barcodeImgRef = useRef(null)
+  const barcodeUrlRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '', category: '', sku: '', barcode: '',
     buying_price: '', selling_price: '', quantity: '',
@@ -35,6 +39,18 @@ export default function Products() {
   })
 
   useEffect(() => { fetchProducts() }, [])
+
+  useEffect(() => {
+    if (barcodeUrlRef.current) { URL.revokeObjectURL(barcodeUrlRef.current); barcodeUrlRef.current = null }
+    if (!barcodeViewProduct) { setBarcodeImageUrl(null); return }
+    setBarcodeLoading(true)
+    barcodeAPI.getImage(barcodeViewProduct.id).then(res => {
+      const url = URL.createObjectURL(res.data)
+      barcodeUrlRef.current = url
+      setBarcodeImageUrl(url)
+    }).catch(() => setBarcodeImageUrl(null)).finally(() => setBarcodeLoading(false))
+    return () => { if (barcodeUrlRef.current) { URL.revokeObjectURL(barcodeUrlRef.current); barcodeUrlRef.current = null } }
+  }, [barcodeViewProduct])
 
   const fetchProducts = async () => {
     try {
@@ -245,23 +261,46 @@ export default function Products() {
         <Table columns={columns} data={filteredProducts} />
       </Card>
 
-      <Modal isOpen={!!barcodeViewProduct} onClose={() => setBarcodeViewProduct(null)}
+      <Modal isOpen={!!barcodeViewProduct} onClose={() => { setBarcodeViewProduct(null); setBarcodeImageUrl(null) }}
         title={barcodeViewProduct ? `Barcode: ${barcodeViewProduct.name}` : ''} size="sm">
         {barcodeViewProduct && (
           <div className="text-center space-y-4 py-4">
-            <img src={`/api/products/${barcodeViewProduct.id}/barcode_image/`}
-              alt={`Barcode for ${barcodeViewProduct.name}`}
-              className="mx-auto max-w-full"
-              style={{ imageRendering: 'pixelated' }}
-            />
-            <p className="text-lg font-mono font-bold text-gray-800">{barcodeViewProduct.barcode}</p>
-            <p className="text-sm text-gray-500">{barcodeViewProduct.name} — {barcodeViewProduct.sku}</p>
-            <button onClick={() => {
-              const a = document.createElement('a')
-              a.href = `/api/products/${barcodeViewProduct.id}/barcode_image/`
-              a.download = `barcode_${barcodeViewProduct.sku}.png`
-              a.click()
-            }} className="btn btn-primary mt-2">Download Barcode</button>
+            {barcodeLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader size={32} className="animate-spin text-emerald-600" />
+              </div>
+            )}
+            {barcodeImageUrl && !barcodeLoading && (
+              <>
+                <img ref={barcodeImgRef} src={barcodeImageUrl}
+                  alt={`Barcode for ${barcodeViewProduct.name}`}
+                  className="mx-auto max-w-full border border-gray-200 rounded-lg p-2"
+                  style={{ imageRendering: 'pixelated', maxHeight: 160 }}
+                />
+                <p className="text-lg font-mono font-bold text-gray-800">{barcodeViewProduct.barcode}</p>
+                <p className="text-sm text-gray-500">{barcodeViewProduct.name} — {barcodeViewProduct.sku}</p>
+                <div className="flex justify-center gap-3 pt-2">
+                  <button onClick={() => {
+                    const a = document.createElement('a')
+                    a.href = barcodeImageUrl
+                    a.download = `barcode_${barcodeViewProduct.sku}.png`
+                    a.click()
+                  }} className="btn btn-primary inline-flex items-center gap-2">
+                    <Download size={16} /> Download
+                  </button>
+                  <button onClick={() => {
+                    const win = window.open('')
+                    win.document.write(`<html><head><title>Print Barcode</title><style>body{text-align:center;padding-top:40px}img{max-width:100%;height:auto}</style></head><body><img src="${barcodeImageUrl}" onload="window.print()" /></body></html>`)
+                    win.document.close()
+                  }} className="btn btn-secondary inline-flex items-center gap-2">
+                    <Printer size={16} /> Print
+                  </button>
+                </div>
+              </>
+            )}
+            {!barcodeImageUrl && !barcodeLoading && (
+              <p className="text-red-500">Failed to load barcode image.</p>
+            )}
           </div>
         )}
       </Modal>
