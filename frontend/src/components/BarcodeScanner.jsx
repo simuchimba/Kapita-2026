@@ -49,11 +49,6 @@ export default function BarcodeScanner({ onProductFound, onClose }) {
   const startCamera = async () => {
     setError('')
     setLastCode('')
-    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
-    if (!isSecure) {
-      setError('Camera requires HTTPS. Enter barcode manually below.')
-      return
-    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
