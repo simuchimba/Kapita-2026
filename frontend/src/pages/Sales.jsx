@@ -497,7 +497,7 @@ export default function Sales() {
               </select>
             </div>
             <div>
-              <label className="label">Customer</label>
+              <label className="label">Customer {formData.payment_type === 'credit' && <span className="text-red-500">*</span>}</label>
               <select className="input" value={formData.customer}
                 onChange={e => setFormData({ ...formData, customer: e.target.value })}>
                 <option value="">Walk-in customer</option>
@@ -580,11 +580,18 @@ export default function Sales() {
               </select>
             </div>
             {formData.payment_type === 'credit' && (
-              <div>
-                <label className="label">Due Date</label>
-                <input type="date" className="input" value={formData.due_date}
-                  onChange={e => setFormData({ ...formData, due_date: e.target.value })} />
-              </div>
+              <>
+                <div>
+                  <label className="label">Deposit</label>
+                  <input type="number" step="0.01" className="input" value={formData.deposit_amount}
+                    onChange={e => setFormData({ ...formData, deposit_amount: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Due Date</label>
+                  <input type="date" className="input" value={formData.due_date}
+                    onChange={e => setFormData({ ...formData, due_date: e.target.value })} />
+                </div>
+              </>
             )}
           </div>
 
