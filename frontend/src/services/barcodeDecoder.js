@@ -202,7 +202,7 @@ function matchCode128Pattern(normalized) {
 
   // Fuzzy: find data pattern with smallest total digit difference
   let best = -1
-  let bestDist = 3
+  let bestDist = 2
   for (let i = 0; i < CODE128_PATTERNS.length; i++) {
     const p = CODE128_PATTERNS[i]
     let dist = 0
@@ -220,33 +220,41 @@ function isStartB(normalized) {
 }
 
 function decodeCode128(bars) {
-  if (bars.length < 18) return null
+  // Minimum: Start(6) + 4 data(24) + Stop(6/-1 trailing space) = ~30
+  if (bars.length < 30) return null
+
+  // STRICT: Start Code B must be at position 0
+  const sGroup = bars.slice(0, 6)
+  const sTotal = sGroup.reduce((a, b) => a + b, 0)
+  if (sTotal === 0) return null
+  if (!isStartB(sGroup.map(b => Math.round(b * 11 / sTotal)))) return null
 
   let result = ''
-  let i = 0
+  let i = 6
+  let foundStop = false
 
   while (i < bars.length - 5) {
     const group = bars.slice(i, i + 6)
     const total = group.reduce((a, b) => a + b, 0)
-    if (total === 0) { i++; continue }
+    if (total === 0) return null
 
     const normalized = group.map(b => Math.round(b * 11 / total))
 
-    if (isStartB(normalized)) { i += 6; continue }
+    // Check for stop pattern
+    if (patternDist(normalized, [2, 3, 3, 1, 1, 1]) <= 2) {
+      foundStop = true
+      break
+    }
 
     const idx = matchCode128Pattern(normalized)
-    if (idx === -2) break
-    if (idx === -1) {
-      if (result.length > 3) break
-      i++
-      continue
-    }
+    if (idx < 0) return null
+    if (result.length > 20) return null
 
     result += String.fromCharCode(idx + 32)
     i += 6
   }
 
-  return result.length > 0 ? result : null
+  return result.length >= 4 && foundStop ? result : null
 }
 
 export function scanImageData(imageData) {
