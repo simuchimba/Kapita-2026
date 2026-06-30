@@ -185,14 +185,45 @@ function decodeEAN8(bars) {
   return digits.join('')
 }
 
-const CODE128_START_B = '211214'
+function patternDist(a, b) {
+  let d = 0
+  for (let j = 0; j < 6; j++) d += Math.abs(a[j] - b[j])
+  return d
+}
+
+function matchCode128Pattern(normalized) {
+  const pat = normalized.join('')
+  const exact = CODE128_PATTERNS.indexOf(pat)
+  if (exact !== -1) return exact
+
+  // Stop pattern (233111) — check BEFORE fuzzy to avoid false data match
+  const stopPat = [2, 3, 3, 1, 1, 1]
+  if (patternDist(normalized, stopPat) <= 2) return -2
+
+  // Fuzzy: find data pattern with smallest total digit difference
+  let best = -1
+  let bestDist = 3
+  for (let i = 0; i < CODE128_PATTERNS.length; i++) {
+    const p = CODE128_PATTERNS[i]
+    let dist = 0
+    for (let j = 0; j < 6; j++) {
+      dist += Math.abs(normalized[j] - parseInt(p[j]))
+      if (dist > bestDist) break
+    }
+    if (dist < bestDist) { bestDist = dist; best = i }
+  }
+  return best
+}
+
+function isStartB(normalized) {
+  return patternDist(normalized, [2, 1, 1, 2, 1, 4]) <= 2
+}
 
 function decodeCode128(bars) {
   if (bars.length < 18) return null
 
   let result = ''
   let i = 0
-  let codeSet = 'B'
 
   while (i < bars.length - 5) {
     const group = bars.slice(i, i + 6)
@@ -200,26 +231,18 @@ function decodeCode128(bars) {
     if (total === 0) { i++; continue }
 
     const normalized = group.map(b => Math.round(b * 11 / total))
-    const pattern = normalized.join('')
-    if (pattern.length !== 6) break
 
-    // Skip Start Code B — ensures proper character alignment
-    if (pattern === CODE128_START_B) { i += 6; continue }
+    if (isStartB(normalized)) { i += 6; continue }
 
-    const idx = CODE128_PATTERNS.indexOf(pattern)
+    const idx = matchCode128Pattern(normalized)
+    if (idx === -2) break
     if (idx === -1) {
-      if (pattern === '233111' || pattern === '233112') break
       if (result.length > 3) break
       i++
       continue
     }
 
-    if (codeSet === 'B') {
-      if (idx < 64) result += String.fromCharCode(idx + 32)
-      else result += String.fromCharCode(idx + 32)
-    } else {
-      if (idx < 100) result += String.fromCharCode(Math.floor(idx / 10) + 48) + String.fromCharCode((idx % 10) + 48)
-    }
+    result += String.fromCharCode(idx + 32)
     i += 6
   }
 
@@ -240,9 +263,15 @@ export function scanImageData(imageData) {
     return row
   }
 
-  function findBarcodeRegion(row, threshold) {
-    const avg = row.reduce((a, b) => a + b, 0) / row.length
-    const binary = row.map(v => v < avg ? 1 : 0)
+  function findBarcodeRegion(row) {
+    const min = Math.min(...row)
+    const max = Math.max(...row)
+    const range = max - min
+    if (range < 20) return null
+
+    // Adaptive threshold: 35% between min and max
+    const threshold = min + range * 0.35
+    const binary = row.map(v => v < threshold ? 1 : 0)
 
     let transitionCount = 0
     for (let i = 1; i < binary.length; i++) {
@@ -257,7 +286,7 @@ export function scanImageData(imageData) {
     while (end > start && binary[end] !== 1) end--
 
     if (end - start < 40) return null
-    return { start, end, binary: binary.slice(start, end + 1) }
+    return binary.slice(start, end + 1)
   }
 
   function barsFromBinary(binary) {
@@ -276,40 +305,40 @@ export function scanImageData(imageData) {
   }
 
   const scanLines = []
-  for (let y = Math.floor(height * 0.3); y < Math.floor(height * 0.7); y += 3) {
+  for (let y = 0; y < height; y += 3) {
     scanLines.push(y)
   }
-  if (scanLines.length < 3) {
-    for (let y = Math.floor(height * 0.1); y < height - 1; y += 2) {
-      scanLines.push(y)
-    }
-  }
+
+  let bestResult = null
 
   for (const y of scanLines) {
     const row = getScanLine(y)
-    const region = findBarcodeRegion(row)
-    if (!region) continue
+    const binary = findBarcodeRegion(row)
+    if (!binary) continue
 
-    const bars = barsFromBinary(region.binary)
+    const bars = barsFromBinary(binary)
     if (bars.length < 30 || bars.length > 120) continue
 
     const totalPixels = bars.reduce((a, b) => a + b, 0)
     if (totalPixels < 30) continue
 
-    let result = decodeEAN13(bars)
-    if (result) return { format: 'EAN-13', code: result }
+    const tryDecode = (format, code) => {
+      if (code && (!bestResult || code.length > bestResult.code.length)) {
+        bestResult = { format, code }
+      }
+    }
 
-    result = decodeEAN8(bars)
-    if (result) return { format: 'EAN-8', code: result }
-
-    result = decodeCode128(bars)
-    if (result) return { format: 'Code-128', code: result }
-
-    result = decodeUPC_A(bars)
-    if (result) return { format: 'UPC-A', code: result }
+    tryDecode('EAN-13', decodeEAN13(bars))
+    if (bestResult && bestResult.code.length >= 8) break
+    tryDecode('EAN-8', decodeEAN8(bars))
+    if (bestResult && bestResult.code.length >= 8) break
+    tryDecode('Code-128', decodeCode128(bars))
+    if (bestResult && bestResult.code.length >= 5) break
+    tryDecode('UPC-A', decodeUPC_A(bars))
+    if (bestResult && bestResult.code.length >= 8) break
   }
 
-  return null
+  return bestResult
 }
 
 export async function scanVideoFrame(video) {
