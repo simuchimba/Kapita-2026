@@ -41,7 +41,9 @@ export default function Products() {
 
   useEffect(() => {
     if (barcodeViewProduct && barcodeViewProduct.barcode) {
-      setBarcodeImageUrl(generateBarcodeDataUrl(barcodeViewProduct.barcode))
+      const url = generateBarcodeDataUrl(barcodeViewProduct.barcode)
+      console.log('barcode data url length:', url ? url.length : 0, 'first 50:', url ? url.substring(0, 50) : 'null')
+      setBarcodeImageUrl(url)
     } else {
       setBarcodeImageUrl(null)
     }
