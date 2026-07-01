@@ -74,6 +74,9 @@ Open IndexedDB viewer:
 - **Login** — requires internet (credentials never cached)
 - **Conflict resolution** — if the same record is modified offline and online, the server wins (last write)
 - **Retry limit** — mutations that fail 5 times are dropped (logged in sync_log)
+- **First visit must be online** — assets are cached on first load. If you visit for the first time while offline, the page won't load. Always load the app once while online to populate the cache.
+- **SW upgrades** — old caches are kept as fallbacks. If a new SW version is deployed and you go offline before revisiting, cached assets from the previous version serve as fallback.
+- **Empty asset fallback** — if a JS/CSS file is not in any cache and you're offline, an empty response is returned. The page may render without styles or functionality, but it won't white-screen.
 
 ## Offline Indicator
 
