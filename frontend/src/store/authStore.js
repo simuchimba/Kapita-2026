@@ -7,8 +7,9 @@ function profileErrorMessage(error) {
       ? error.response.data.detail
       : 'Could not load your Kapita profile.'
   }
+  if (!navigator.onLine) return 'No internet connection. Please go online and try again.'
   if (error.request && !error.response) {
-    return 'Cannot reach the Kapita server. Make sure the backend is running on port 8000.'
+    return 'Cannot reach the Kapita server. Please check your internet connection.'
   }
   return 'Could not load your Kapita profile. Please try again.'
 }
@@ -24,6 +25,11 @@ export const useAuthStore = create((set, get) => ({
         // Clear any old tokens first
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
+
+        if (!navigator.onLine) {
+          set({ error: 'No internet connection. Please go online to log in.', loading: false })
+          return { success: false, error: { detail: 'No internet connection' } }
+        }
 
         set({ loading: true, error: null })
         try {
@@ -49,9 +55,13 @@ export const useAuthStore = create((set, get) => ({
         } catch (error) {
             const message =
                 error.response?.data?.detail ||
-                (error.request && !error.response
-                    ? 'Cannot reach the server. Make sure the backend is running on port 8000.'
-                    : 'Login failed. Check your username/email and password.')
+                (error.response?.data?.offline
+                    ? 'No internet connection. Please go online and try again.'
+                    : (!navigator.onLine
+                        ? 'No internet connection. Please go online to log in.'
+                        : (error.request && !error.response
+                            ? 'Cannot reach the Kapita server. Please check your internet connection.'
+                            : 'Login failed. Check your username/email and password.')))
 
             set({
                 error: message,

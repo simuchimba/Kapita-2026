@@ -37,34 +37,36 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  // API requests
+  // Auth endpoints — never cache, never queue
+  if (url.pathname.startsWith('/api/') && url.pathname.includes('/auth/')) {
+    event.respondWith(
+      fetch(request).catch(() =>
+        new Response(JSON.stringify({ offline: true }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    )
+    return
+  }
+
+  // Non-auth API requests
   if (url.pathname.startsWith('/api/')) {
     if (request.method === 'GET') {
-      if (url.pathname.includes('/auth/')) {
-        event.respondWith(
-          fetch(request).catch(() =>
-            new Response(JSON.stringify({ offline: true }), {
-              status: 401,
-              headers: { 'Content-Type': 'application/json' },
+      event.respondWith(
+        caches.match(request).then((cached) => {
+          const fetched = fetch(request)
+            .then((res) => {
+              if (res.ok) {
+                const clone = res.clone()
+                caches.open(API_CACHE).then((c) => c.put(request, clone))
+              }
+              return res
             })
-          )
-        )
-      } else {
-        event.respondWith(
-          caches.match(request).then((cached) => {
-            const fetched = fetch(request)
-              .then((res) => {
-                if (res.ok) {
-                  const clone = res.clone()
-                  caches.open(API_CACHE).then((c) => c.put(request, clone))
-                }
-                return res
-              })
-              .catch(() => cached || emptyOk(url))
-            return cached || fetched
-          })
-        )
-      }
+            .catch(() => cached || emptyOk(url))
+          return cached || fetched
+        })
+      )
     } else {
       event.respondWith(
         fetch(request).catch(() =>
