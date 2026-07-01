@@ -13,6 +13,7 @@
     "@ricky0123/vad-react": "^0.0.36",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
+    "idb": "^8.0.3",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.294.0",

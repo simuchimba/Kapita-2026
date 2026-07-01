@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
+import { queueMutation } from './db'
 
 const API_URL =
   import.meta.env.VITE_API_URL || '/api'
@@ -37,6 +38,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
+
+    if (!error.response && navigator.onLine === false) {
+      const method = originalRequest.method?.toUpperCase()
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        await queueMutation(method, originalRequest.url, originalRequest.data)
+        return Promise.resolve({ data: { offline: true, queued: true }, status: 202 })
+      }
+    }
 
     const detail = error.response?.data?.detail
     const subscriptionBlocked =
