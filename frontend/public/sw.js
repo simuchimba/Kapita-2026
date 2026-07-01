@@ -1,144 +1,106 @@
-const CACHE_NAME = 'kapita-cache-v2'
-const API_CACHE = 'kapita-api-v2'
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/logo1.png',
-]
+const CACHE_NAME = 'kapita-v3'
+const API_CACHE = 'kapita-api-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {})
+      return cache.addAll(['/', '/index.html', '/logo1.png']).catch(() => {})
     })
   )
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== API_CACHE).map(k => caches.delete(k))
-      )
-    })
-  )
-  self.clients.claim()
+  // Keep old caches as fallbacks — don't delete them.
+  // caches.match() searches ALL caches, so old assets are still found.
+  event.waitUntil(self.clients.claim())
 })
 
-function shouldCache(url) {
-  if (url.origin !== self.location.origin) return false
-  if (url.pathname.startsWith('/api/')) return true
-  if (url.pathname.startsWith('/assets/')) return true
-  if (url.pathname === '/' || url.pathname === '/index.html') return true
-  return false
+function mimeFor(url) {
+  if (url.pathname.endsWith('.js')) return 'application/javascript'
+  if (url.pathname.endsWith('.css')) return 'text/css'
+  if (url.pathname.endsWith('.png')) return 'image/png'
+  if (url.pathname.endsWith('.jpg') || url.pathname.endsWith('.jpeg')) return 'image/jpeg'
+  if (url.pathname.endsWith('.svg')) return 'image/svg+xml'
+  if (url.pathname.endsWith('.ico')) return 'image/x-icon'
+  if (url.pathname.endsWith('.woff2')) return 'font/woff2'
+  if (url.pathname.endsWith('.json')) return 'application/json'
+  return 'text/html'
 }
 
-function isMutation(method) {
-  return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
-}
-
-function isAuth(url) {
-  return url.pathname.includes('/auth/')
-}
-
-function networkFirst(event) {
-  return fetch(event.request).then((response) => {
-    const clone = response.clone()
-    caches.open(API_CACHE).then((cache) => {
-      cache.put(event.request, clone)
-    })
-    return response
-  }).catch(() => {
-    return caches.match(event.request).then((cached) => {
-      if (cached) return cached
-      return new Response(JSON.stringify({ offline: true, message: 'No cached data available' }), {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    })
-  })
-}
-
-function cacheFirst(event) {
-  return caches.match(event.request).then((cached) => {
-    if (cached) return cached
-    return fetch(event.request).then((response) => {
-      if (response.ok) {
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-      }
-      return response
-    })
-  })
-}
-
-function staleWhileRevalidate(event) {
-  const cached = caches.match(event.request)
-  const fetched = fetch(event.request).then((response) => {
-    if (response.ok) {
-      const clone = response.clone()
-      caches.open(API_CACHE).then((cache) => cache.put(event.request, clone))
-    }
-    return response
-  })
-  return cached.then(c => c || fetched)
-}
-
-function handleMutationOffline(event) {
-  return caches.match(event.request).then((cached) => {
-    if (cached) return cached
-    return new Response(JSON.stringify({ offline: true, queued: true, message: 'Request queued for sync' }), {
-      status: 202,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  })
+function emptyOk(url) {
+  return new Response('', { status: 200, headers: { 'Content-Type': mimeFor(url) } })
 }
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
 
-  if (!shouldCache(url)) return
-
+  // API requests
   if (url.pathname.startsWith('/api/')) {
     if (request.method === 'GET') {
-      if (isAuth(url)) {
-        event.respondWith(networkFirst(event))
+      if (url.pathname.includes('/auth/')) {
+        event.respondWith(
+          fetch(request).catch(() =>
+            new Response(JSON.stringify({ offline: true }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          )
+        )
       } else {
-        event.respondWith(staleWhileRevalidate(event))
+        event.respondWith(
+          caches.match(request).then((cached) => {
+            const fetched = fetch(request)
+              .then((res) => {
+                if (res.ok) {
+                  const clone = res.clone()
+                  caches.open(API_CACHE).then((c) => c.put(request, clone))
+                }
+                return res
+              })
+              .catch(() => cached || emptyOk(url))
+            return cached || fetched
+          })
+        )
       }
     } else {
       event.respondWith(
-        fetch(event.request).catch(() => handleMutationOffline(event))
+        fetch(request).catch(() =>
+          new Response(JSON.stringify({ offline: true, queued: true }), {
+            status: 202,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        )
       )
     }
     return
   }
 
-  event.respondWith(cacheFirst(event))
+  // Static assets — cache first across ALL caches, network fallback, empty fallback
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached
+      return fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone()
+            caches.open(CACHE_NAME).then((c) => c.put(request, clone))
+          }
+          return res
+        })
+        .catch(() => emptyOk(url))
+    })
+  )
 })
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
-    self.skipWaiting()
-  }
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
   if (event.data?.type === 'CLEAR_CACHE') {
-    caches.delete(CACHE_NAME)
-    caches.delete(API_CACHE)
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => caches.delete(k)))
+    )
     event.source?.postMessage({ type: 'CACHE_CLEARED' })
   }
 })
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-mutations') {
-    event.waitUntil(processSyncQueue())
-  }
-})
-
-async function processSyncQueue() {
-  const clients = await self.clients.matchAll()
-  for (const client of clients) {
-    client.postMessage({ type: 'TRIGGER_SYNC' })
-  }
-}
