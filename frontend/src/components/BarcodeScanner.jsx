@@ -14,9 +14,10 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
   const [scanActive, setScanActive] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
-  const lastCodeRef = useRef('')
+  const lastCodeRef = useRef({ code: '', time: 0 })
   const intervalRef = useRef(null)
   const detectTimeoutRef = useRef(null)
+  const COOLDOWN_MS = 2000
 
   useEffect(() => {
     return () => {
@@ -60,8 +61,10 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     const video = videoRef.current
     if (!video || !streamRef.current) return
     const result = await scanVideoFrame(video)
-    if (result && result.code && result.code !== lastCodeRef.current) {
-      lastCodeRef.current = result.code
+    if (result && result.code) {
+      const now = Date.now()
+      if (result.code === lastCodeRef.current.code && now - lastCodeRef.current.time < COOLDOWN_MS) return
+      lastCodeRef.current = { code: result.code, time: now }
       playBeep()
       setDetectedCode(result.code)
       if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
@@ -73,7 +76,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
 
   const startCamera = async () => {
     setError('')
-    lastCodeRef.current = ''
+    lastCodeRef.current = { code: '', time: 0 }
     setDetectedCode('')
     setScanning(true)
     try {
@@ -107,7 +110,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
   const handleManualSearch = async () => {
     const code = manualCode.trim()
     if (!code) return
-    lastCodeRef.current = code
+    lastCodeRef.current = { code, time: Date.now() }
     setDetectedCode(code)
     if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
     detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
@@ -151,7 +154,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
         <div className="relative rounded-lg overflow-hidden bg-black">
           <video ref={videoRef} className="w-full h-full min-h-[200px]" playsInline muted />
           <div className="absolute inset-0 pointer-events-none">
-            <div className="h-full w-0.5 mx-auto bg-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
+            <div className="absolute left-0 right-0 h-0.5 bg-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.7)] animate-scan-line" />
           </div>
           {scanActive && (
             <>

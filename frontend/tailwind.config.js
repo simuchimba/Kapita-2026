@@ -6,6 +6,15 @@ export default {
   ],
   theme: {
     extend: {
+      animation: {
+        'scan-line': 'scan-line 2s ease-in-out infinite',
+      },
+      keyframes: {
+        'scan-line': {
+          '0%, 100%': { top: '2%' },
+          '50%': { top: '95%' },
+        },
+      },
       colors: {
         primary: {
           50: '#f0fdf4',
