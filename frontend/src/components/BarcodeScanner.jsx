@@ -82,9 +82,16 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     setDetectedCode('')
     setScanning(true)
     try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
-      })
+      let s
+      try {
+        s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        })
+      } catch {
+        s = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+        })
+      }
       streamRef.current = s
       const video = videoRef.current
       if (video) {
