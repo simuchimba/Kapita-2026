@@ -267,6 +267,7 @@
   }
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .floating-nav-glow::before {
     animation: none;
