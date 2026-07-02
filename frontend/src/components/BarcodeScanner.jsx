@@ -154,10 +154,12 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
 
       {scanning && (
         <div className="relative rounded-lg overflow-hidden bg-black">
-          <style>{`@keyframes sl{0%,to{top:4%}50%{top:94%}}.sl{animation:sl 2s ease-in-out infinite}`}</style>
+          <style>{`@keyframes sl{0%,to{transform:translateY(0)}50%{transform:translateY(calc(100% - 4px))}}.sl{animation:sl 2s ease-in-out infinite;will-change:transform}`}</style>
           <video ref={videoRef} className="w-full h-full min-h-[200px]" playsInline muted />
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute left-0 right-0 h-0.5 bg-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.7)] sl" />
+            <div className="absolute inset-0 sl">
+              <div className="absolute left-0 right-0 top-0 h-0.5 bg-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.7)]" />
+            </div>
           </div>
           {scanActive && (
             <>
