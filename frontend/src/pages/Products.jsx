@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw, Barcode, Download, Printer } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, ScanLine, Camera, RefreshCw, QrCode, Download, Printer } from 'lucide-react'
 import Card from '../components/Card'
 import Table from '../components/Table'
 import Modal from '../components/Modal'
@@ -41,9 +41,7 @@ export default function Products() {
 
   useEffect(() => {
     if (barcodeViewProduct && barcodeViewProduct.barcode) {
-      const url = generateBarcodeDataUrl(barcodeViewProduct.barcode)
-      console.log('barcode data url length:', url ? url.length : 0, 'first 50:', url ? url.substring(0, 50) : 'null')
-      setBarcodeImageUrl(url)
+      generateBarcodeDataUrl(barcodeViewProduct.barcode).then(url => setBarcodeImageUrl(url))
     } else {
       setBarcodeImageUrl(null)
     }
@@ -166,7 +164,7 @@ export default function Products() {
     { header: 'Name', accessor: 'name' },
     { header: 'SKU', accessor: 'sku' },
     {
-      header: 'Barcode',
+      header: 'Code',
       render: (row) => (
         <span className="text-xs font-mono text-gray-500">
           {row.barcode || '-'}
@@ -200,8 +198,8 @@ export default function Products() {
       render: (row) => (
         <div className="flex space-x-2">
           {row.barcode && (
-            <button onClick={() => setBarcodeViewProduct(row)} className="p-1 text-emerald-600 hover:text-emerald-800" title="View barcode">
-              <Barcode className="w-4 h-4" />
+            <button onClick={() => setBarcodeViewProduct(row)} className="p-1 text-emerald-600 hover:text-emerald-800" title="View QR code">
+              <QrCode className="w-4 h-4" />
             </button>
           )}
           <button onClick={() => handleEdit(row)} className="p-1 text-blue-600 hover:text-blue-800">
@@ -234,13 +232,13 @@ export default function Products() {
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input type="text" placeholder="Search by name, SKU, barcode..." className="input pl-10"
+            <input type="text" placeholder="Search by name, SKU, code..." className="input pl-10"
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleBarcodeSearch()} />
           </div>
-          <button onClick={() => setShowScanner(true)} className="btn btn-secondary flex items-center gap-2" title="Scan barcode">
+          <button onClick={() => setShowScanner(true)} className="btn btn-secondary flex items-center gap-2" title="Scan QR code">
             <Camera className="w-5 h-5" />
-            <span className="hidden sm:inline">Scan</span>
+            <span className="hidden sm:inline">Scan QR</span>
           </button>
         </div>
       </Card>
@@ -259,20 +257,20 @@ export default function Products() {
       </Card>
 
       <Modal isOpen={!!barcodeViewProduct} onClose={() => setBarcodeViewProduct(null)}
-        title={barcodeViewProduct ? `Barcode: ${barcodeViewProduct.name}` : ''} size="sm">
+        title={barcodeViewProduct ? `QR Code: ${barcodeViewProduct.name}` : ''} size="sm">
         {barcodeViewProduct && (
           <div className="text-center space-y-4 py-4">
             {barcodeImageUrl ? (
               <>
                 <img ref={barcodeImgRef} src={barcodeImageUrl}
-                  alt={`Barcode for ${barcodeViewProduct.name}`}
+                  alt={`QR Code for ${barcodeViewProduct.name}`}
                   className="mx-auto max-w-full border border-gray-200 rounded-lg p-2"
-                  style={{ imageRendering: 'pixelated', maxHeight: 160 }}
+                  style={{ maxHeight: 260 }}
                 />
                 <p className="text-lg font-mono font-bold text-gray-800">{barcodeViewProduct.barcode}</p>
                 <p className="text-sm text-gray-500">{barcodeViewProduct.name} — {barcodeViewProduct.sku}</p>
                 <div className="flex justify-center gap-3 pt-2">
-                  <button onClick={() => downloadBarcode(barcodeImageUrl, `barcode_${barcodeViewProduct.sku}.png`)}
+                  <button onClick={() => downloadBarcode(barcodeImageUrl, `qrcode_${barcodeViewProduct.sku}.png`)}
                     className="btn btn-primary inline-flex items-center gap-2">
                     <Download size={16} /> Download
                   </button>
@@ -283,7 +281,7 @@ export default function Products() {
                 </div>
               </>
             ) : (
-              <p className="text-gray-500 py-8">No barcode assigned to this product.</p>
+              <p className="text-gray-500 py-8">No QR code assigned to this product.</p>
             )}
           </div>
         )}
@@ -318,7 +316,7 @@ export default function Products() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="label mb-0">Barcode</label>
+                <label className="label mb-0">Code</label>
                 <div className="flex gap-2">
                   {!editingProduct && (
                     <button type="button" onClick={handleGenerateIds}

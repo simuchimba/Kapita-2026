@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barcode Scanner Test</title>
+<title>QR Code Scanner Test</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #111; color: #eee; padding: 20px; }
@@ -47,7 +47,7 @@
 </style>
 </head>
 <body>
-<h1>📷 Barcode Scanner Test</h1>
+<h1>📷 QR Code Scanner Test</h1>
 <div class="container">
   <div class="panel">
     <video id="video" autoplay playsInline muted></video>
@@ -73,9 +73,9 @@
     </div>
   </div>
   <div class="panel">
-    <h2 style="font-size:1rem;margin-bottom:8px">Reference Barcode</h2>
+    <h2 style="font-size:1rem;margin-bottom:8px">Reference QR Code</h2>
     <div style="margin-bottom:8px">
-      <label style="font-size:0.85rem">Test barcode: </label>
+      <label style="font-size:0.85rem">Test code: </label>
       <input type="text" id="barcodeInput" value="POT-1922-36" style="background:#0f0f1a;border:1px solid #333;color:#fff;padding:6px 10px;border-radius:6px;font-family:monospace;width:200px" />
       <button id="refreshBarcodeBtn" class="btn-blue" style="padding:6px 12px;font-size:0.8rem;margin-left:4px">Generate</button>
     </div>
@@ -85,7 +85,7 @@
     </div>
     <hr />
     <h2 style="font-size:1rem;margin-bottom:8px">Decoder Test (no camera)</h2>
-    <button id="testDecoderBtn" class="btn-blue">Test Decode Reference</button>
+    <button id="testDecoderBtn" class="btn-blue">Test Decode QR Code</button>
     <div class="result-box" id="testResultBox" style="margin-top:8px;min-height:40px">
       <span class="na">Click to test</span>
     </div>
@@ -256,8 +256,8 @@ testDecoderBtn.addEventListener('click', async () => {
   const text = barcodeInput.value.trim()
   if (!text) { testResultBox.innerHTML = '<span class="na">Enter a barcode value first</span>'; return }
 
-  // Generate barcode, get its canvas, pass through decoder
-  const url = generateBarcodeDataUrl(text)
+  // Generate QR code, get its canvas, pass through decoder
+  const url = await generateBarcodeDataUrl(text)
   if (!url) { testResultBox.innerHTML = '<span class="na">Failed to generate barcode</span>'; return }
 
   const img = new Image()

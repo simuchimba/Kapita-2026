@@ -151,7 +151,7 @@ export default function Sales() {
         return
       }
     } catch {}
-    alert(`No product found with barcode: ${code}`)
+    alert(`No product found with code: ${code}`)
     setSearching(false)
   }
 
@@ -330,7 +330,7 @@ export default function Sales() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
-          <p className="text-gray-600">Scan barcodes to sell instantly</p>
+          <p className="text-gray-600">Scan QR codes to sell instantly</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowFullForm(true)} className="btn btn-secondary flex items-center gap-2">
@@ -360,7 +360,7 @@ export default function Sales() {
               <input type="text" value={manualBarcode}
                 onChange={e => setManualBarcode(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleManualBarcode()}
-                placeholder="Type barcode and press Enter..."
+                placeholder="Type code and press Enter..."
                 className="input flex-1 font-mono text-sm"
               />
               <button onClick={handleManualBarcode} disabled={searching} className="btn btn-primary">
@@ -370,9 +370,9 @@ export default function Sales() {
             {cart.length === 0 && (
               <div className="flex gap-1 flex-wrap">
                 {products.filter(p => p.barcode).slice(0, 4).map(p => (
-                  <button key={p.id} type="button"
+                  <button key={p.id}
                     onClick={() => handleBarcodeResult(p)}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 rounded px-2 py-1 text-gray-600">
+                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-emerald-100 hover:text-emerald-700 rounded-full transition-colors font-mono">
                     {p.barcode}
                   </button>
                 ))}

@@ -47,10 +47,10 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
         if (items?.length > 0) {
           if (onProductFound) onProductFound(items[0])
         } else {
-          setError(`No product found with barcode: ${code}`)
+          setError(`No product found for code: ${code}`)
         }
       } catch {
-        setError(`No product found with barcode: ${code}`)
+        setError(`No product found for code: ${code}`)
       }
     }
     setSearching(false)
@@ -95,11 +95,11 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     } catch (err) {
       setScanning(false)
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('Camera permission denied. Allow camera access or enter barcode manually.')
+        setError('Camera permission denied. Allow camera access or enter code manually.')
       } else if (err.name === 'NotFoundError') {
-        setError('No camera found. Enter barcode manually below.')
+        setError('No camera found. Enter code manually below.')
       } else {
-        setError('Camera unavailable. Enter barcode manually below.')
+        setError('Camera unavailable. Enter code manually below.')
       }
     }
   }
@@ -119,7 +119,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     <div className="space-y-3">
       <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
         <Camera size={16} className="text-emerald-600" />
-        Barcode Scanner
+        QR Code Scanner
         {onClose && (
           <button onClick={onClose} className="ml-auto text-gray-400 hover:text-gray-600"><X size={16} /></button>
         )}
@@ -129,14 +129,14 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
         <div className="space-y-3">
           <button onClick={startCamera}
             className="btn btn-primary w-full inline-flex items-center justify-center gap-2 py-2.5">
-            <Camera size={20} /> Scan with Camera
+            <Camera size={20} /> Scan QR Code
           </button>
 
           <div className="flex gap-2">
             <input type="text" value={manualCode}
               onChange={e => setManualCode(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleManualSearch() }}
-              placeholder="Type barcode number and press Enter..."
+              placeholder="Type product code and press Enter..."
               className="input flex-1 font-mono"
               autoFocus
             />
@@ -151,7 +151,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
         <div className="relative rounded-lg overflow-hidden bg-black">
           <video ref={videoRef} className="w-full h-full min-h-[200px]" playsInline muted />
           <div className="absolute inset-0 pointer-events-none">
-            <div className={`h-full w-0.5 mx-auto bg-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.6)] ${scanActive ? 'animate-pulse' : ''}`} />
+            <div className="h-full w-0.5 mx-auto bg-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
           </div>
           {scanActive && (
             <>
@@ -172,7 +172,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
                 </div>
               )}
               <p className="absolute bottom-2 left-2 right-2 text-center text-white text-xs bg-black/50 px-2 py-1 rounded mx-2">
-                Center barcode in the frame and hold steady
+                Hold QR code steady in the frame
               </p>
             </>
           )}
