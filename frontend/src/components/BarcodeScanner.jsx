@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { barcodeAPI } from '../services/api'
 import { productsAPI } from '../services/api'
 import { scanVideoFrame } from '../services/barcodeDecoder'
-import { Search, Camera, X, Loader, AlertCircle } from 'lucide-react'
+import { playBeep } from '../services/beep'
+import { Search, Camera, X, Loader, AlertCircle, ScanLine } from 'lucide-react'
 
 export default function BarcodeScanner({ onProductFound, onClose, continuous = false }) {
   const [manualCode, setManualCode] = useState('')
@@ -13,14 +14,17 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
   const [scanningActive, setScanningActive] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [stream, setStream] = useState(null)
+  const [detectedCode, setDetectedCode] = useState('')
   const videoRef = useRef(null)
   const animFrameRef = useRef(null)
   const lastScanTimeRef = useRef(0)
+  const detectTimeoutRef = useRef(null)
 
   useEffect(() => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
       if (stream) stream.getTracks().forEach(t => t.stop())
+      if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
     }
   }, [stream])
 
@@ -41,13 +45,21 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     setCameraReady(false)
   }
 
+  const flashDetected = useCallback((code) => {
+    setDetectedCode(code)
+    if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
+    detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
+  }, [])
+
   const frameScanLoop = useCallback(() => {
     if (!videoRef.current || !scanningActive || !cameraReady) return
     const now = Date.now()
-    if (now - lastScanTimeRef.current > 400) {
+    if (now - lastScanTimeRef.current > 300) {
       scanVideoFrame(videoRef.current).then(result => {
         if (result && result.code && result.code !== lastCode) {
           setLastCode(result.code)
+          flashDetected(result.code)
+          playBeep()
           if (!continuous) stopCamera()
           lookupProduct(result.code)
         }
@@ -55,16 +67,17 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
       lastScanTimeRef.current = now
     }
     animFrameRef.current = requestAnimationFrame(frameScanLoop)
-  }, [scanningActive, cameraReady, lastCode, continuous])
+  }, [scanningActive, cameraReady, lastCode, continuous, flashDetected])
 
   const startCamera = async () => {
     setError('')
     setLastCode('')
+    setDetectedCode('')
     setCameraReady(false)
     setScanning(true)
     try {
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
       })
       setStream(s)
     } catch (err) {
@@ -148,22 +161,40 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
 
       {scanning && (
         <div className="relative rounded-lg overflow-hidden bg-black">
-          <video ref={videoRef} className="w-full h-full min-h-[160px]" playsInline muted />
+          <video ref={videoRef} className="w-full h-full min-h-[200px]" playsInline muted />
           {cameraReady && (
             <>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-4/5 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+                <div className="relative w-4/5">
+                  <div className="h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+                  <div className="absolute -left-1 -top-3 w-6 h-6 border-l-2 border-t-2 border-red-500 rounded-tl" />
+                  <div className="absolute -right-1 -top-3 w-6 h-6 border-r-2 border-t-2 border-red-500 rounded-tr" />
+                  <div className="absolute -left-1 top-1 w-6 h-6 border-l-2 border-b-2 border-red-500 rounded-bl" />
+                  <div className="absolute -right-1 top-1 w-6 h-6 border-r-2 border-b-2 border-red-500 rounded-br" />
+                </div>
               </div>
               <div className="absolute top-2 right-2 flex gap-1">
-                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                  <Loader size={12} className="animate-spin" /> Scanning
+                <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                  detectedCode ? 'bg-emerald-500 text-white' : 'bg-green-500 text-white'
+                }`}>
+                  {detectedCode ? (
+                    <ScanLine size={12} />
+                  ) : (
+                    <Loader size={12} className="animate-spin" />
+                  )}
+                  {detectedCode ? 'Detected!' : 'Scanning'}
                 </span>
                 <button onClick={stopCamera} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600">
                   <X size={16} />
                 </button>
               </div>
+              {detectedCode && (
+                <div className="absolute top-2 left-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                  {detectedCode}
+                </div>
+              )}
               <p className="absolute bottom-2 left-2 right-2 text-center text-white text-xs bg-black/50 px-2 py-1 rounded mx-2">
-                Align barcode with red line, hold steady
+                Hold barcode steady inside the guide
               </p>
             </>
           )}

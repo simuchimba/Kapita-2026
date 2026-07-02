@@ -277,13 +277,23 @@ function decodeCode128(bars) {
 export function scanImageData(imageData) {
   const { data, width, height } = imageData
 
-  function getScanLine(y) {
-    const row = []
-    const offset = y * width * 4
-    for (let x = 0; x < width; x++) {
-      const idx = offset + x * 4
-      const gray = Math.round(0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2])
-      row.push(gray)
+  function getAveragedRow(y, numRows) {
+    const half = Math.floor(numRows / 2)
+    const row = new Array(width).fill(0)
+    let count = 0
+    for (let dy = -half; dy <= half; dy++) {
+      const yy = y + dy
+      if (yy < 0 || yy >= height) continue
+      const offset = yy * width * 4
+      for (let x = 0; x < width; x++) {
+        const idx = offset + x * 4
+        row[x] += 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]
+      }
+      count++
+    }
+    if (count > 1) {
+      const inv = 1 / count
+      for (let x = 0; x < width; x++) row[x] = Math.round(row[x] * inv)
     }
     return row
   }
@@ -292,26 +302,28 @@ export function scanImageData(imageData) {
     const min = Math.min(...row)
     const max = Math.max(...row)
     const range = max - min
-    if (range < 20) return null
+    if (range < 10) return null
 
-    // Adaptive threshold: 35% between min and max
-    const threshold = min + range * 0.35
-    const binary = row.map(v => v < threshold ? 1 : 0)
+    const thresholds = [0.35, 0.25, 0.45, 0.50]
+    for (const t of thresholds) {
+      const thr = min + range * t
+      const binary = row.map(v => v < thr ? 1 : 0)
 
-    let transitionCount = 0
-    for (let i = 1; i < binary.length; i++) {
-      if (binary[i] !== binary[i - 1]) transitionCount++
+      let trans = 0
+      for (let i = 1; i < binary.length; i++) {
+        if (binary[i] !== binary[i - 1]) trans++
+      }
+      if (trans < 10 || trans > 200) continue
+
+      let start = 0
+      while (start < binary.length && binary[start] !== 1) start++
+      let end = binary.length - 1
+      while (end > start && binary[end] !== 1) end--
+      if (end - start < 20) continue
+
+      return binary.slice(start, end + 1)
     }
-
-    if (transitionCount < 20 || transitionCount > 150) return null
-
-    let start = 0
-    while (start < binary.length && binary[start] !== 1) start++
-    let end = binary.length - 1
-    while (end > start && binary[end] !== 1) end--
-
-    if (end - start < 40) return null
-    return binary.slice(start, end + 1)
+    return null
   }
 
   function barsFromBinary(binary) {
@@ -329,23 +341,18 @@ export function scanImageData(imageData) {
     return bars
   }
 
-  const scanLines = []
-  for (let y = 0; y < height; y += 3) {
-    scanLines.push(y)
-  }
-
   let bestResult = null
 
-  for (const y of scanLines) {
-    const row = getScanLine(y)
+  for (let y = 0; y < height; y += 2) {
+    const row = getAveragedRow(y, 5)
     const binary = findBarcodeRegion(row)
     if (!binary) continue
 
     const bars = barsFromBinary(binary)
-    if (bars.length < 30 || bars.length > 120) continue
+    if (bars.length < 20 || bars.length > 150) continue
 
     const totalPixels = bars.reduce((a, b) => a + b, 0)
-    if (totalPixels < 30) continue
+    if (totalPixels < 20) continue
 
     const tryDecode = (format, code) => {
       if (code && (!bestResult || code.length > bestResult.code.length)) {
@@ -353,14 +360,13 @@ export function scanImageData(imageData) {
       }
     }
 
+    tryDecode('Code-128', decodeCode128(bars))
+    if (bestResult && bestResult.code.length >= 5) break
     tryDecode('EAN-13', decodeEAN13(bars))
     if (bestResult && bestResult.code.length >= 8) break
     tryDecode('EAN-8', decodeEAN8(bars))
     if (bestResult && bestResult.code.length >= 8) break
-    tryDecode('Code-128', decodeCode128(bars))
-    if (bestResult && bestResult.code.length >= 5) break
     tryDecode('UPC-A', decodeUPC_A(bars))
-    if (bestResult && bestResult.code.length >= 8) break
   }
 
   return bestResult
@@ -369,13 +375,28 @@ export function scanImageData(imageData) {
 export async function scanVideoFrame(video) {
   if (!video || video.readyState < 2) return null
 
+  const vw = video.videoWidth
+  const vh = video.videoHeight
+  if (!vw || !vh) return null
+
+  // Digitally zoom to center 50% — user aligns barcode with the red guide in the center
+  const cropW = Math.round(vw * 0.5)
+  const cropH = Math.round(vh * 0.5)
+  const cropX = Math.round((vw - cropW) / 2)
+  const cropY = Math.round((vh - cropH) / 2)
+
+  const MIN_DIM = 480
+  const outW = Math.max(cropW, MIN_DIM)
+  const outH = Math.round(outW * (cropH / cropW))
+
   const canvas = document.createElement('canvas')
-  canvas.width = video.videoWidth
-  canvas.height = video.videoHeight
+  canvas.width = outW
+  canvas.height = outH
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  ctx.drawImage(video, 0, 0)
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
+  const imageData = ctx.getImageData(0, 0, outW, outH)
   return scanImageData(imageData)
 }
