@@ -1,36 +1,23 @@
 import { create } from 'zustand'
 import { authAPI } from '../services/api'
-
-function profileErrorMessage(error) {
-  if (error.response?.data?.detail) {
-    return typeof error.response.data.detail === 'string'
-      ? error.response.data.detail
-      : 'Could not load your Kapita profile.'
-  }
-  if (!navigator.onLine) return 'No internet connection. Please go online and try again.'
-  if (error.request && !error.response) {
-    return 'Cannot reach the Kapita server. Please check your internet connection.'
-  }
-  return 'Could not load your Kapita profile. Please try again.'
-}
+import { getToken, setToken, clearTokens, setRememberMe } from '../services/tokenStorage'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   loading: false,
-  sessionLoading: !!localStorage.getItem('access_token'),
+  sessionLoading: !!getToken('access_token'),
   error: null,
 
   login: async (credentials) => {
-        // Clear any old tokens first
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+        clearTokens()
 
         if (!navigator.onLine) {
           set({ error: 'No internet connection. Please go online to log in.', loading: false })
           return { success: false, error: { detail: 'No internet connection' } }
         }
 
+        setRememberMe(!!credentials.rememberMe)
         set({ loading: true, error: null })
         try {
             const response = await authAPI.login({
@@ -39,8 +26,8 @@ export const useAuthStore = create((set, get) => ({
             })
             const { access, refresh } = response.data
 
-            localStorage.setItem('access_token', access)
-            localStorage.setItem('refresh_token', refresh)
+            setToken('access_token', access)
+            setToken('refresh_token', refresh)
 
             const profileResponse = await authAPI.getProfile()
             set({
@@ -63,6 +50,7 @@ export const useAuthStore = create((set, get) => ({
                             ? 'Cannot reach the Kapita server. Please check your internet connection.'
                             : 'Login failed. Check your username/email and password.')))
 
+            clearTokens()
             set({
                 error: message,
                 loading: false,
@@ -88,13 +76,12 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    clearTokens()
     set({ user: null, isAuthenticated: false, sessionLoading: false, error: null })
   },
 
   hydrateSession: async () => {
-    const token = localStorage.getItem('access_token')
+    const token = getToken('access_token')
 
     if (!token) {
       set({ user: null, isAuthenticated: false, sessionLoading: false, error: null })
@@ -113,14 +100,30 @@ export const useAuthStore = create((set, get) => ({
       })
       return { success: true, user: response.data }
     } catch (error) {
-      const refreshToken = localStorage.getItem('refresh_token')
+      const isNetworkError = !error.response && error.request
+      const isAuthError = error.response?.status === 401 ||
+        (typeof error.response?.data?.detail === 'string' &&
+          (error.response.data.detail.toLowerCase().includes('token_not_valid') ||
+           error.response.data.detail.toLowerCase().includes('given token not valid')))
+
+      if (isNetworkError) {
+        set({ sessionLoading: false })
+        return { success: false, offline: true }
+      }
+
+      if (!isAuthError) {
+        set({ sessionLoading: false })
+        return { success: false }
+      }
+
+      const refreshToken = getToken('refresh_token')
 
       try {
         if (!refreshToken) throw error
 
         const refreshResponse = await authAPI.refreshToken(refreshToken)
         const { access } = refreshResponse.data
-        localStorage.setItem('access_token', access)
+        setToken('access_token', access)
 
         const profileResponse = await authAPI.getProfile()
         set({
@@ -131,8 +134,12 @@ export const useAuthStore = create((set, get) => ({
         })
         return { success: true, user: profileResponse.data }
       } catch (_) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+        const isRefreshNetworkError = !_.response && _.request
+        if (isRefreshNetworkError) {
+          set({ sessionLoading: false })
+          return { success: false, offline: true }
+        }
+        clearTokens()
         set({ user: null, isAuthenticated: false, sessionLoading: false, error: null })
         return { success: false }
       }

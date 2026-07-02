@@ -10,7 +10,11 @@ function LoginForm({ onSuccess, prefillUsername }) {
   const { login, loading } = useAuthStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [formData, setFormData] = useState({ username: searchParams.get('email') || '', password: '' })
+  const [formData, setFormData] = useState({
+    username: searchParams.get('email') || '',
+    password: '',
+    rememberMe: true,
+  })
   const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
@@ -51,6 +55,15 @@ function LoginForm({ onSuccess, prefillUsername }) {
             required
           />
         </div>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-primary"
+            checked={formData.rememberMe}
+            onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+          />
+          <span className="text-sm text-gray-600">Remember me</span>
+        </label>
         <button type="submit" disabled={loading} className="btn btn-primary w-full">
           {loading ? 'Signing in...' : 'Sign in'}
         </button>

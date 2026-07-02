@@ -1,5 +1,5 @@
-const CACHE_NAME = 'kapita-v3'
-const API_CACHE = 'kapita-api-v3'
+const CACHE_NAME = 'kapita-v4'
+const API_CACHE = 'kapita-api-v4'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -77,6 +77,14 @@ self.addEventListener('fetch', (event) => {
         )
       )
     }
+    return
+  }
+
+  // Navigation requests (SPA routes) — serve cached index.html offline
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match('/index.html'))
+    )
     return
   }
 

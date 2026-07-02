@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 import { queueMutation } from './db'
+import { getToken, setToken } from './tokenStorage'
 
 const API_URL =
   import.meta.env.VITE_API_URL || '/api'
@@ -13,7 +14,7 @@ const api = axios.create({
 })
 
 function resolveAuthToken() {
-  return localStorage.getItem('access_token') || null
+  return getToken('access_token')
 }
 
 // Request interceptor to add auth token
@@ -75,7 +76,7 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
+        const refreshToken = getToken('refresh_token')
         if (!refreshToken) throw new Error('No refresh token')
 
         const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
@@ -83,7 +84,7 @@ api.interceptors.response.use(
         })
 
         const { access } = response.data
-        localStorage.setItem('access_token', access)
+        setToken('access_token', access)
 
         originalRequest.headers.Authorization = `Bearer ${access}`
         return api(originalRequest)
