@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { barcodeAPI } from '../services/api'
 import { productsAPI } from '../services/api'
 import { scanVideoFrame } from '../services/barcodeDecoder'
@@ -10,92 +10,29 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
   const [searching, setSearching] = useState(false)
-  const [lastCode, setLastCode] = useState('')
-  const [scanningActive, setScanningActive] = useState(false)
-  const [cameraReady, setCameraReady] = useState(false)
-  const [stream, setStream] = useState(null)
   const [detectedCode, setDetectedCode] = useState('')
+  const [scanActive, setScanActive] = useState(false)
   const videoRef = useRef(null)
-  const animFrameRef = useRef(null)
-  const lastScanTimeRef = useRef(0)
+  const streamRef = useRef(null)
+  const lastCodeRef = useRef('')
+  const intervalRef = useRef(null)
   const detectTimeoutRef = useRef(null)
 
   useEffect(() => {
     return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-      if (stream) stream.getTracks().forEach(t => t.stop())
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
       if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
     }
-  }, [stream])
-
-  useEffect(() => {
-    if (!stream || !videoRef.current) return
-    videoRef.current.srcObject = stream
-    videoRef.current.play().then(() => {
-      setCameraReady(true)
-      setScanningActive(true)
-    }).catch(() => {})
-  }, [stream])
-
-  const stopCamera = () => {
-    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
-    if (stream) { stream.getTracks().forEach(t => t.stop()); setStream(null) }
-    setScanning(false)
-    setScanningActive(false)
-    setCameraReady(false)
-  }
-
-  const flashDetected = useCallback((code) => {
-    setDetectedCode(code)
-    if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
-    detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
   }, [])
 
-  const frameScanLoop = useCallback(() => {
-    if (!videoRef.current || !scanningActive || !cameraReady) return
-    const now = Date.now()
-    if (now - lastScanTimeRef.current > 300) {
-      scanVideoFrame(videoRef.current).then(result => {
-        if (result && result.code && result.code !== lastCode) {
-          setLastCode(result.code)
-          flashDetected(result.code)
-          playBeep()
-          if (!continuous) stopCamera()
-          lookupProduct(result.code)
-        }
-      }).catch(() => {})
-      lastScanTimeRef.current = now
-    }
-    animFrameRef.current = requestAnimationFrame(frameScanLoop)
-  }, [scanningActive, cameraReady, lastCode, continuous, flashDetected])
-
-  const startCamera = async () => {
-    setError('')
-    setLastCode('')
-    setDetectedCode('')
-    setCameraReady(false)
-    setScanning(true)
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      })
-      setStream(s)
-    } catch (err) {
-      setScanning(false)
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('Camera permission denied. Allow camera access or enter barcode manually.')
-      } else if (err.name === 'NotFoundError') {
-        setError('No camera found. Enter barcode manually below.')
-      } else {
-        setError('Camera unavailable. Enter barcode manually below.')
-      }
-    }
+  const stopCamera = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = null
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
+    setScanActive(false)
+    setScanning(false)
   }
-
-  useEffect(() => {
-    if (scanningActive && cameraReady) frameScanLoop()
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
-  }, [scanningActive, cameraReady, frameScanLoop])
 
   const lookupProduct = async (code) => {
     setError('')
@@ -119,10 +56,61 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
     setSearching(false)
   }
 
+  const doScan = async () => {
+    const video = videoRef.current
+    if (!video || !streamRef.current) return
+    const result = await scanVideoFrame(video)
+    if (result && result.code && result.code !== lastCodeRef.current) {
+      lastCodeRef.current = result.code
+      playBeep()
+      setDetectedCode(result.code)
+      if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
+      detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
+      if (!continuous) stopCamera()
+      lookupProduct(result.code)
+    }
+  }
+
+  const startCamera = async () => {
+    setError('')
+    lastCodeRef.current = ''
+    setDetectedCode('')
+    setScanning(true)
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      streamRef.current = s
+      const video = videoRef.current
+      if (video) {
+        video.srcObject = s
+        video.play().then(() => {
+          setScanActive(true)
+          intervalRef.current = setInterval(doScan, 250)
+        }).catch(() => {
+          setError('Failed to start video playback')
+          stopCamera()
+        })
+      }
+    } catch (err) {
+      setScanning(false)
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Camera permission denied. Allow camera access or enter barcode manually.')
+      } else if (err.name === 'NotFoundError') {
+        setError('No camera found. Enter barcode manually below.')
+      } else {
+        setError('Camera unavailable. Enter barcode manually below.')
+      }
+    }
+  }
+
   const handleManualSearch = async () => {
     const code = manualCode.trim()
     if (!code) return
-    setLastCode(code)
+    lastCodeRef.current = code
+    setDetectedCode(code)
+    if (detectTimeoutRef.current) clearTimeout(detectTimeoutRef.current)
+    detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
     await lookupProduct(code)
     setManualCode('')
   }
@@ -162,29 +150,19 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
       {scanning && (
         <div className="relative rounded-lg overflow-hidden bg-black">
           <video ref={videoRef} className="w-full h-full min-h-[200px]" playsInline muted />
-          {cameraReady && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className={`h-full w-0.5 mx-auto bg-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.6)] ${scanActive ? 'animate-pulse' : ''}`} />
+          </div>
+          {scanActive && (
             <>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-4/5">
-                  <div className="h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
-                  <div className="absolute -left-1 -top-3 w-6 h-6 border-l-2 border-t-2 border-red-500 rounded-tl" />
-                  <div className="absolute -right-1 -top-3 w-6 h-6 border-r-2 border-t-2 border-red-500 rounded-tr" />
-                  <div className="absolute -left-1 top-1 w-6 h-6 border-l-2 border-b-2 border-red-500 rounded-bl" />
-                  <div className="absolute -right-1 top-1 w-6 h-6 border-r-2 border-b-2 border-red-500 rounded-br" />
-                </div>
-              </div>
               <div className="absolute top-2 right-2 flex gap-1">
                 <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
-                  detectedCode ? 'bg-emerald-500 text-white' : 'bg-green-500 text-white'
+                  detectedCode ? 'bg-emerald-500 text-white' : 'bg-green-500/80 text-white'
                 }`}>
-                  {detectedCode ? (
-                    <ScanLine size={12} />
-                  ) : (
-                    <Loader size={12} className="animate-spin" />
-                  )}
+                  {detectedCode ? <ScanLine size={12} /> : <Loader size={12} className="animate-spin" />}
                   {detectedCode ? 'Detected!' : 'Scanning'}
                 </span>
-                <button onClick={stopCamera} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600">
+                <button onClick={stopCamera} className="bg-red-500/80 text-white p-1.5 rounded-full hover:bg-red-600">
                   <X size={16} />
                 </button>
               </div>
@@ -194,11 +172,11 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
                 </div>
               )}
               <p className="absolute bottom-2 left-2 right-2 text-center text-white text-xs bg-black/50 px-2 py-1 rounded mx-2">
-                Hold barcode steady inside the guide
+                Center barcode in the frame and hold steady
               </p>
             </>
           )}
-          {!cameraReady && (
+          {!scanActive && (
             <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
               Starting camera...
             </div>

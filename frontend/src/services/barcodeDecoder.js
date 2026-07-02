@@ -304,24 +304,30 @@ export function scanImageData(imageData) {
     const range = max - min
     if (range < 10) return null
 
-    const thresholds = [0.35, 0.25, 0.45, 0.50]
+    const thresholds = [0.35, 0.30, 0.40, 0.25, 0.45, 0.50]
     for (const t of thresholds) {
       const thr = min + range * t
-      const binary = row.map(v => v < thr ? 1 : 0)
 
-      let trans = 0
-      for (let i = 1; i < binary.length; i++) {
-        if (binary[i] !== binary[i - 1]) trans++
+      // Try normal polarity (dark bars on light background)
+      for (const invert of [false, true]) {
+        const binary = invert
+          ? row.map(v => v > thr ? 1 : 0)
+          : row.map(v => v < thr ? 1 : 0)
+
+        let trans = 0
+        for (let i = 1; i < binary.length; i++) {
+          if (binary[i] !== binary[i - 1]) trans++
+        }
+        if (trans < 10 || trans > 200) continue
+
+        let start = 0
+        while (start < binary.length && binary[start] !== 1) start++
+        let end = binary.length - 1
+        while (end > start && binary[end] !== 1) end--
+        if (end - start < 20) continue
+
+        return binary.slice(start, end + 1)
       }
-      if (trans < 10 || trans > 200) continue
-
-      let start = 0
-      while (start < binary.length && binary[start] !== 1) start++
-      let end = binary.length - 1
-      while (end > start && binary[end] !== 1) end--
-      if (end - start < 20) continue
-
-      return binary.slice(start, end + 1)
     }
     return null
   }
@@ -375,16 +381,17 @@ export function scanImageData(imageData) {
 async function nativeScan(video) {
   if (!('BarcodeDetector' in window)) return null
   try {
-    const detector = new BarcodeDetector({
-      formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'code_39', 'codabar', 'itf', 'qr_code', 'data_matrix', 'pdf417'],
-    })
+    const supported = await BarcodeDetector.getSupportedFormats()
+    const desired = ['code_128', 'ean_13', 'ean_8', 'upc_a']
+    const formats = desired.filter(f => supported.includes(f))
+    if (formats.length === 0) return null
+    const detector = new BarcodeDetector({ formats })
     const barcodes = await detector.detect(video)
     if (barcodes.length > 0) {
       const b = barcodes[0]
       const formatMap = {
         code_128: 'Code-128', ean_13: 'EAN-13', ean_8: 'EAN-8',
-        upc_a: 'UPC-A', code_39: 'Code-39', codabar: 'Codabar',
-        itf: 'ITF', qr_code: 'QR Code', data_matrix: 'Data Matrix', pdf417: 'PDF417',
+        upc_a: 'UPC-A',
       }
       return { format: formatMap[b.format] || b.format, code: b.rawValue }
     }
@@ -392,28 +399,43 @@ async function nativeScan(video) {
   return null
 }
 
-export async function scanVideoFrame(video) {
-  if (!video || video.readyState < 2) return null
-
-  // 1. Try native BarcodeDetector API (Chrome 70+, Edge) — fast and reliable
-  const native = await nativeScan(video)
-  if (native) return native
-
-  // 2. Fallback: pure-JS decoder with center-zoom crop
+function frameToImageData(video) {
   const vw = video.videoWidth
   const vh = video.videoHeight
   if (!vw || !vh) return null
+  const canvas = document.createElement('canvas')
+  canvas.width = vw
+  canvas.height = vh
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.drawImage(video, 0, 0)
+  return ctx.getImageData(0, 0, vw, vh)
+}
 
-  const cropW = Math.round(vw * 0.5)
-  const cropH = Math.round(vh * 0.5)
-  const cropX = Math.round((vw - cropW) / 2)
-  const cropY = Math.round((vh - cropH) / 2)
+export async function scanVideoFrame(video) {
+  if (!video || video.readyState < 2) return null
 
-  const MIN_DIM = 480
-  const outW = Math.max(cropW, MIN_DIM)
-  const outH = Math.round(outW * (cropH / cropW))
+  // 1. Native BarcodeDetector API
+  const native = await nativeScan(video)
+  if (native) return native
+
+  // 2. Pure-JS on full frame
+  const imageData = frameToImageData(video)
+  if (!imageData) return null
+
+  const fullResult = scanImageData(imageData)
+  if (fullResult) return fullResult
+
+  // 3. Pure-JS on center 50% crop (try zoom for small barcodes)
+  const { width, height } = imageData
+  const cropW = Math.round(width * 0.5)
+  const cropH = Math.round(height * 0.5)
+  const cropX = Math.round((width - cropW) / 2)
+  const cropY = Math.round((height - cropH) / 2)
 
   const canvas = document.createElement('canvas')
+  const outW = Math.max(cropW, 480)
+  const outH = Math.round(outW * (cropH / cropW))
   canvas.width = outW
   canvas.height = outH
   const ctx = canvas.getContext('2d')
@@ -421,6 +443,6 @@ export async function scanVideoFrame(video) {
 
   ctx.imageSmoothingEnabled = false
   ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
-  const imageData = ctx.getImageData(0, 0, outW, outH)
-  return scanImageData(imageData)
+  const croppedData = ctx.getImageData(0, 0, outW, outH)
+  return scanImageData(croppedData)
 }
