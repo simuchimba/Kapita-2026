@@ -185,22 +185,11 @@ function decodeEAN8(bars) {
   return digits.join('')
 }
 
-function patternDist(a, b) {
-  let d = 0
-  for (let j = 0; j < 6; j++) d += Math.abs(a[j] - b[j])
-  return d
-}
-
 function matchCode128Pattern(normalized) {
   const pat = normalized.join('')
   const exact = CODE128_PATTERNS.indexOf(pat)
   if (exact !== -1) return exact
 
-  // Stop pattern (233111) — check BEFORE fuzzy to avoid false data match
-  const stopPat = [2, 3, 3, 1, 1, 1]
-  if (patternDist(normalized, stopPat) <= 2) return -2
-
-  // Fuzzy: find data pattern with smallest total digit difference
   let best = -1
   let bestDist = 2
   for (let i = 0; i < CODE128_PATTERNS.length; i++) {
@@ -216,15 +205,26 @@ function matchCode128Pattern(normalized) {
 }
 
 function isStartB(normalized) {
-  return patternDist(normalized, [2, 1, 1, 2, 1, 4]) <= 2
+  const target = [2, 1, 1, 2, 1, 4]
+  let total = 0
+  for (let j = 0; j < 6; j++) {
+    const diff = Math.abs(normalized[j] - target[j])
+    if (diff > 1) return false
+    total += diff
+  }
+  return total <= 1
 }
 
 function isStopPattern(norm, len) {
   const target = [2, 3, 3, 1, 1, 1]
   if (len < 5 || len > 6) return false
-  let d = 0
-  for (let j = 0; j < len; j++) d += Math.abs(norm[j] - target[j])
-  return d <= (len === 5 ? 3 : 2)
+  let total = 0
+  for (let j = 0; j < len; j++) {
+    const diff = Math.abs(norm[j] - target[j])
+    if (diff > 1) return false
+    total += diff
+  }
+  return total <= 1
 }
 
 function decodeCode128(bars) {
