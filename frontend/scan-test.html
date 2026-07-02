@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcode Scanner Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #111; color: #eee; padding: 20px; }
+  h1 { font-size: 1.3rem; margin-bottom: 12px; color: #fff; }
+  .container { display: flex; gap: 20px; flex-wrap: wrap; }
+  .panel { background: #1a1a2e; border-radius: 12px; padding: 16px; flex: 1; min-width: 340px; }
+  video { width: 100%; border-radius: 8px; background: #000; display: block; }
+  canvas { display: none; }
+  .controls { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+  .btn-green { background: #22c55e; color: #fff; }
+  .btn-green:hover { background: #16a34a; }
+  .btn-red { background: #ef4444; color: #fff; }
+  .btn-red:hover { background: #dc2626; }
+  .btn-blue { background: #3b82f6; color: #fff; }
+  .btn-blue:hover { background: #2563eb; }
+  .btn-green:disabled, .btn-red:disabled { opacity: 0.5; cursor: not-allowed; }
+  .result-box { background: #0f0f1a; border-radius: 8px; padding: 12px; margin: 8px 0; min-height: 60px; }
+  .code-display { font-size: 1.5rem; font-weight: bold; font-family: monospace; color: #22c55e; }
+  .na { color: #666; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #22c55e33; color: #22c55e; border: 1px solid #22c55e; }
+  .badge-blue { background: #3b82f633; color: #3b82f6; border: 1px solid #3b82f6; }
+  .badge-red { background: #ef444433; color: #ef4444; border: 1px solid #ef4444; }
+  .badge-yellow { background: #eab30833; color: #eab308; border: 1px solid #eab308; }
+  .config { margin: 8px 0; }
+  .config label { font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .ref-barcode { background: #fff; border-radius: 6px; padding: 12px; text-align: center; margin: 8px 0; }
+  .ref-barcode img { max-width: 100%; }
+  .ref-barcode .label { font-family: monospace; font-size: 0.85rem; color: #333; margin-top: 4px; }
+  .log { background: #0f0f1a; border-radius: 8px; padding: 8px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; }
+  .log-entry { color: #888; }
+  .log-entry.detect { color: #22c55e; }
+  .log-entry.error { color: #ef4444; }
+  .log-entry.info { color: #60a5fa; }
+  hr { border: none; border-top: 1px solid #333; margin: 12px 0; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.8rem; }
+  .stats div { background: #0f0f1a; padding: 6px 10px; border-radius: 4px; }
+  .stats .label { color: #888; }
+  .stats .value { color: #fff; font-weight: 600; font-family: monospace; }
+</style>
+</head>
+<body>
+<h1>📷 Barcode Scanner Test</h1>
+<div class="container">
+  <div class="panel">
+    <video id="video" autoplay playsInline muted></video>
+    <div class="controls">
+      <button id="startBtn" class="btn-green">Start Camera</button>
+      <button id="stopBtn" class="btn-red" disabled>Stop Camera</button>
+      <button id="scanBtn" class="btn-blue" disabled>Scan Once</button>
+    </div>
+    <div class="config">
+      <label><input type="checkbox" id="autoScan" checked /> Auto-scan every 500ms</label>
+      <label style="margin-top:4px"><input type="checkbox" id="showDebug" /> Show debug overlay</label>
+    </div>
+    <hr />
+    <div><span class="badge" id="methodBadge">—</span></div>
+    <div class="result-box" id="resultBox">
+      <span class="na">Waiting for scan...</span>
+    </div>
+    <div class="stats">
+      <div><span class="label">Camera:</span> <span class="value" id="camInfo">—</span></div>
+      <div><span class="label">Scan count:</span> <span class="value" id="scanCount">0</span></div>
+      <div><span class="label">Last scan:</span> <span class="value" id="lastScanTime">—</span></div>
+      <div><span class="label">Resolution:</span> <span class="value" id="resInfo">—</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 style="font-size:1rem;margin-bottom:8px">Reference Barcode</h2>
+    <div style="margin-bottom:8px">
+      <label style="font-size:0.85rem">Test barcode: </label>
+      <input type="text" id="barcodeInput" value="POT-1922-36" style="background:#0f0f1a;border:1px solid #333;color:#fff;padding:6px 10px;border-radius:6px;font-family:monospace;width:200px" />
+      <button id="refreshBarcodeBtn" class="btn-blue" style="padding:6px 12px;font-size:0.8rem;margin-left:4px">Generate</button>
+    </div>
+    <div class="ref-barcode" id="refBarcode">
+      <img id="barcodeImg" alt="Barcode" />
+      <div class="label" id="barcodeLabel">POT-1922-36</div>
+    </div>
+    <hr />
+    <h2 style="font-size:1rem;margin-bottom:8px">Decoder Test (no camera)</h2>
+    <button id="testDecoderBtn" class="btn-blue">Test Decode Reference</button>
+    <div class="result-box" id="testResultBox" style="margin-top:8px;min-height:40px">
+      <span class="na">Click to test</span>
+    </div>
+    <hr />
+    <h2 style="font-size:1rem;margin-bottom:8px">Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+<canvas id="debugCanvas"></canvas>
+<script type="module">
+import { scanImageData, scanVideoFrame } from './src/services/barcodeDecoder.js'
+import { generateBarcodeDataUrl } from './src/services/barcodeRenderer.js'
+
+const video = document.getElementById('video')
+const startBtn = document.getElementById('startBtn')
+const stopBtn = document.getElementById('stopBtn')
+const scanBtn = document.getElementById('scanBtn')
+const autoScanCb = document.getElementById('autoScan')
+const showDebugCb = document.getElementById('showDebug')
+const methodBadge = document.getElementById('methodBadge')
+const resultBox = document.getElementById('resultBox')
+const camInfo = document.getElementById('camInfo')
+const resInfo = document.getElementById('resInfo')
+const scanCountEl = document.getElementById('scanCount')
+const lastScanTimeEl = document.getElementById('lastScanTime')
+const logEl = document.getElementById('log')
+const barcodeImg = document.getElementById('barcodeImg')
+const barcodeLabel = document.getElementById('barcodeLabel')
+const barcodeInput = document.getElementById('barcodeInput')
+const refreshBarcodeBtn = document.getElementById('refreshBarcodeBtn')
+const testResultBox = document.getElementById('testResultBox')
+const testDecoderBtn = document.getElementById('testDecoderBtn')
+const debugCanvasCtx = document.getElementById('debugCanvas')?.getContext('2d')
+
+let stream = null
+let scanCount = 0
+let autoScanTimer = null
+let scanning = false
+
+function log(msg, type = 'info') {
+  const entry = document.createElement('div')
+  entry.className = `log-entry ${type}`
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`
+  logEl.appendChild(entry)
+  logEl.scrollTop = logEl.scrollHeight
+}
+
+function updateMethodBadge(method) {
+  const isNative = method === 'native'
+  methodBadge.textContent = isNative ? 'Native BarcodeDetector API' : 'Pure-JS Fallback'
+  methodBadge.className = `badge ${isNative ? 'badge-green' : 'badge-yellow'}`
+}
+
+function showResult(code, format, method) {
+  resultBox.innerHTML = `<div>
+    <div class="code-display">${code}</div>
+    <div style="margin-top:4px;display:flex;gap:8px;align-items:center">
+      <span class="badge ${method === 'native' ? 'badge-green' : 'badge-blue'}">${format}</span>
+      <span style="font-size:0.75rem;color:#888">via ${method === 'native' ? 'BarcodeDetector API' : 'pure-JS decoder'}</span>
+    </div>
+  </div>`
+}
+
+function generateRefBarcode(text) {
+  const url = generateBarcodeDataUrl(text)
+  if (url) {
+    barcodeImg.src = url
+    barcodeLabel.textContent = text
+  }
+}
+
+refreshBarcodeBtn.addEventListener('click', () => generateRefBarcode(barcodeInput.value))
+barcodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') generateRefBarcode(barcodeInput.value) })
+generateRefBarcode('POT-1922-36')
+
+async function doScan() {
+  if (!video.videoWidth || scanning) return
+  scanning = true
+
+  const startTime = performance.now()
+  const result = await scanVideoFrame(video)
+  const elapsed = Math.round(performance.now() - startTime)
+
+  scanCount++
+  scanCountEl.textContent = scanCount
+  lastScanTimeEl.textContent = `${elapsed}ms`
+
+  const nativeAvailable = 'BarcodeDetector' in window
+
+  if (result) {
+    const method = nativeAvailable ? 'native' : 'pure-js'
+    showResult(result.code, result.format, method)
+    updateMethodBadge(method)
+    log(`✓ ${result.format}: "${result.code}" (${elapsed}ms, ${method})`, 'detect')
+    // Visual flash
+    resultBox.style.transition = 'background 0.1s'
+    resultBox.style.background = '#22c55e22'
+    setTimeout(() => { resultBox.style.background = '' }, 300)
+  } else {
+    log(`✗ No barcode detected (${elapsed}ms)`, 'error')
+    resultBox.innerHTML = `<span class="na">No barcode found</span>`
+    if (nativeAvailable) {
+      updateMethodBadge('native')
+    }
+  }
+  scanning = false
+}
+
+function startAutoScan() {
+  stopAutoScan()
+  autoScanTimer = setInterval(() => {
+    if (video.videoWidth && autoScanCb.checked) doScan()
+  }, 500)
+}
+
+function stopAutoScan() {
+  if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null }
+}
+
+startBtn.addEventListener('click', async () => {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    })
+    stream = s
+    video.srcObject = s
+    await video.play()
+    camInfo.textContent = 'Active'
+    const waitForDimensions = () => {
+      if (video.videoWidth) {
+        resInfo.textContent = `${video.videoWidth}×${video.videoHeight}`
+        startBtn.disabled = true
+        stopBtn.disabled = false
+        scanBtn.disabled = false
+        startAutoScan()
+        log(`Camera started: ${video.videoWidth}×${video.videoHeight}`, 'info')
+        const native = 'BarcodeDetector' in window
+        if (native) log('✓ Native BarcodeDetector API available', 'detect')
+        else log('ℹ Native API not available, using pure-JS fallback', 'info')
+      } else {
+        setTimeout(waitForDimensions, 100)
+      }
+    }
+    waitForDimensions()
+  } catch (err) {
+    log(`Camera error: ${err.message}`, 'error')
+    alert('Camera access denied or not available')
+  }
+})
+
+stopBtn.addEventListener('click', () => {
+  stopAutoScan()
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null }
+  video.srcObject = null
+  startBtn.disabled = false
+  stopBtn.disabled = true
+  scanBtn.disabled = true
+  camInfo.textContent = 'Stopped'
+  log('Camera stopped', 'info')
+})
+
+scanBtn.addEventListener('click', () => {
+  if (video.videoWidth) doScan()
+})
+
+// Decoder self-test
+testDecoderBtn.addEventListener('click', async () => {
+  const text = barcodeInput.value.trim()
+  if (!text) { testResultBox.innerHTML = '<span class="na">Enter a barcode value first</span>'; return }
+
+  // Generate barcode, get its canvas, pass through decoder
+  const url = generateBarcodeDataUrl(text)
+  if (!url) { testResultBox.innerHTML = '<span class="na">Failed to generate barcode</span>'; return }
+
+  const img = new Image()
+  img.onload = () => {
+    const c = document.createElement('canvas')
+    c.width = img.width
+    c.height = img.height
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const imageData = ctx.getImageData(0, 0, c.width, c.height)
+
+    const start = performance.now()
+    const result = scanImageData(imageData)
+    const elapsed = Math.round(performance.now() - start)
+
+    testResultBox.innerHTML = ''
+    if (result && result.code === text) {
+      testResultBox.innerHTML = `<div style="color:#22c55e">
+        <div style="font-size:1.2rem;font-weight:bold">✓ PASS</div>
+        <div style="margin-top:4px">${result.format}: "${result.code}"</div>
+        <div style="font-size:0.8rem;color:#888;margin-top:2px">${elapsed}ms · Image: ${c.width}×${c.height}</div>
+      </div>`
+      log(`Self-test PASS: "${text}" → ${result.format} (${elapsed}ms)`, 'detect')
+    } else if (result) {
+      testResultBox.innerHTML = `<div style="color:#eab308">
+        <div style="font-size:1.2rem;font-weight:bold">✗ MISMATCH</div>
+        <div>Expected: "${text}"</div>
+        <div>Got: ${result.format}: "${result.code}"</div>
+      </div>`
+      log(`Self-test MISMATCH: expected "${text}", got "${result.code}"`, 'error')
+    } else {
+      testResultBox.innerHTML = `<div style="color:#ef4444">
+        <div style="font-size:1.2rem;font-weight:bold">✗ FAIL</div>
+        <div>Decoder returned null for "${text}"</div>
+        <div style="font-size:0.8rem;color:#888;margin-top:2px">Image: ${c.width}×${c.height}</div>
+      </div>`
+      log(`Self-test FAIL: "${text}" → no decode`, 'error')
+    }
+  }
+  img.src = url
+})
+</script>
+</body>
+</html>

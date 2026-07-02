@@ -372,14 +372,38 @@ export function scanImageData(imageData) {
   return bestResult
 }
 
+async function nativeScan(video) {
+  if (!('BarcodeDetector' in window)) return null
+  try {
+    const detector = new BarcodeDetector({
+      formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'code_39', 'codabar', 'itf', 'qr_code', 'data_matrix', 'pdf417'],
+    })
+    const barcodes = await detector.detect(video)
+    if (barcodes.length > 0) {
+      const b = barcodes[0]
+      const formatMap = {
+        code_128: 'Code-128', ean_13: 'EAN-13', ean_8: 'EAN-8',
+        upc_a: 'UPC-A', code_39: 'Code-39', codabar: 'Codabar',
+        itf: 'ITF', qr_code: 'QR Code', data_matrix: 'Data Matrix', pdf417: 'PDF417',
+      }
+      return { format: formatMap[b.format] || b.format, code: b.rawValue }
+    }
+  } catch {}
+  return null
+}
+
 export async function scanVideoFrame(video) {
   if (!video || video.readyState < 2) return null
 
+  // 1. Try native BarcodeDetector API (Chrome 70+, Edge) — fast and reliable
+  const native = await nativeScan(video)
+  if (native) return native
+
+  // 2. Fallback: pure-JS decoder with center-zoom crop
   const vw = video.videoWidth
   const vh = video.videoHeight
   if (!vw || !vh) return null
 
-  // Digitally zoom to center 50% — user aligns barcode with the red guide in the center
   const cropW = Math.round(vw * 0.5)
   const cropH = Math.round(vh * 0.5)
   const cropX = Math.round((vw - cropW) / 2)
