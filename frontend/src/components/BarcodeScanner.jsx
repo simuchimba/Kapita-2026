@@ -17,7 +17,7 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
   const lastCodeRef = useRef({ code: '', time: 0 })
   const intervalRef = useRef(null)
   const detectTimeoutRef = useRef(null)
-  const COOLDOWN_MS = 2000
+  const COOLDOWN_MS = 1500
 
   useEffect(() => {
     return () => {
@@ -71,6 +71,8 @@ export default function BarcodeScanner({ onProductFound, onClose, continuous = f
       detectTimeoutRef.current = setTimeout(() => setDetectedCode(''), 1500)
       if (!continuous) stopCamera()
       lookupProduct(result.code)
+    } else {
+      lastCodeRef.current.time = 0
     }
   }
 
