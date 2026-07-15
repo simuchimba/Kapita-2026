@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'currencies',
     'invoices',
     'backup',
+    'subscriptions',
 ]
 
 MIDDLEWARE = [

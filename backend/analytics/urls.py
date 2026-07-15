@@ -8,6 +8,7 @@ from .views import (
     MonthlyAnalyticsView,
     ComprehensiveReportView,
     ai_query,
+    BusinessHealthScoreView,
 )
 from .cashflow_views import CashFlowStatementView, CashFlowPDFView
 
@@ -22,4 +23,5 @@ urlpatterns = [
     path('monthly/', MonthlyAnalyticsView.as_view(), name='monthly'),
     path('comprehensive-report/', ComprehensiveReportView.as_view(), name='comprehensive_report'),
     path('ai-query/', ai_query, name='ai_query'),
+    path('health-score/', BusinessHealthScoreView.as_view(), name='health_score'),
 ]
