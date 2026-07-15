@@ -18,6 +18,7 @@ from outgoing_payments.models import OutgoingPayment
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated as DRFIsAuthenticated
 from .openai_client import call_openai_responses, OpenAIError
+from .health_score import BusinessHealthScore
 
 
 class DashboardSummaryView(APIView):
@@ -792,3 +793,14 @@ def ai_query(request):
         result_text = resp
 
     return Response({'result': result_text, 'raw': resp})
+
+
+class BusinessHealthScoreView(APIView):
+    """Calculate and return business health score"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        health_calculator = BusinessHealthScore(user)
+        health_data = health_calculator.calculate()
+        return Response(health_data)
