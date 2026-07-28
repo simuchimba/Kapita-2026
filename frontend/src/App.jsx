@@ -38,6 +38,7 @@ import AdminSubscriptions from './pages/admin/Subscriptions'
 import AdminActivity from './pages/admin/Activity'
 import AdminPurchaseOrders from './pages/admin/PurchaseOrders'
 import AdminSuppliers from './pages/admin/Suppliers'
+import AdminFeedback from './pages/admin/Feedback'
 
 import Invoices from './pages/app/Invoices'
 import InvoiceForm from './pages/app/InvoiceForm'
@@ -157,6 +158,7 @@ function App() {
           <Route path="subscriptions" element={<AdminSubscriptions />} />
           <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
           <Route path="suppliers" element={<AdminSuppliers />} />
+          <Route path="feedback" element={<AdminFeedback />} />
 
           <Route path="activity" element={<AdminActivity />} />
         </Route>

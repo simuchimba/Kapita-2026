@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/currencies/', include('currencies.urls')),
     path('api/invoices/', include('invoices.urls')),
     path('api/backup/', include('backup.urls')),
+    path('api/feedback/', include('feedback.urls')),
 ]
 
 if settings.DEBUG:
