@@ -15,6 +15,10 @@ from rest_framework.views import APIView
 from django.http import FileResponse
 
 from accounts.serializers import UserSerializer
+from purchase_orders.models import PurchaseOrder
+from purchase_orders.serializers import PurchaseOrderSerializer
+from suppliers.models import Supplier
+from suppliers.serializers import SupplierSerializer
 from .models import PaymentSubmission, Subscription, ActivityLog
 from .serializers import (
     PaymentSubmissionSerializer,
@@ -307,6 +311,46 @@ class RevokeSubscriptionView(APIView):
                 message='Your subscription access was revoked by an administrator.',
             )
         return Response({'message': 'Subscription revoked'})
+
+
+class AdminPurchaseOrdersView(APIView):
+    """Platform-wide, read-only view of purchase orders across all tenants."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search = request.query_params.get('search', '').strip()
+        status_filter = request.query_params.get('status', '').strip()
+
+        queryset = PurchaseOrder.objects.select_related('user', 'supplier').prefetch_related(
+            'items', 'items__product'
+        ).order_by('-created_at')
+
+        if search:
+            filters = Q(supplier__name__icontains=search)
+            if search.isdigit():
+                filters |= Q(id=int(search))
+            queryset = queryset.filter(filters)
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return Response(PurchaseOrderSerializer(queryset, many=True).data)
+
+
+class AdminSuppliersView(APIView):
+    """Platform-wide, read-only view of suppliers across all tenants."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search = request.query_params.get('search', '').strip()
+
+        queryset = Supplier.objects.select_related('user').order_by('-created_at')
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(email__icontains=search) | Q(phone__icontains=search)
+            )
+
+        return Response(SupplierSerializer(queryset, many=True).data)
 
 
 class ActivityLogView(APIView):

@@ -2,21 +2,25 @@ import { useEffect, useState } from 'react'
 import { Search, RefreshCw } from 'lucide-react'
 import Card from '../../components/Card'
 import Loading from '../../components/Loading'
-import { purchaseOrdersAPI } from '../../services/api'
+import { billingAPI } from '../../services/api'
 
 export default function AdminPurchaseOrders() {
   const [loading, setLoading] = useState(true)
   const [purchaseOrders, setPurchaseOrders] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [error, setError] = useState('')
 
   const loadPurchaseOrders = async () => {
     setLoading(true)
+    setError('')
     try {
-      const res = await purchaseOrdersAPI.getAll({ search, status: statusFilter })
+      const res = await billingAPI.getAdminPurchaseOrders({ search, status: statusFilter })
       setPurchaseOrders(res.data?.results || res.data || [])
     } catch (err) {
       console.error(err)
+      setPurchaseOrders([])
+      setError(err.response?.data?.detail || 'Failed to load purchase orders. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -67,6 +71,15 @@ export default function AdminPurchaseOrders() {
         </button>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-center justify-between">
+          <p className="text-sm text-red-600">{error}</p>
+          <button type="button" onClick={loadPurchaseOrders} className="btn btn-secondary btn-sm">
+            Retry
+          </button>
+        </div>
+      )}
+
       <Card>
         <form
           onSubmit={handleSearch}
@@ -115,6 +128,13 @@ export default function AdminPurchaseOrders() {
               </tr>
             </thead>
             <tbody>
+              {purchaseOrders.length === 0 && !error && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                    No purchase orders found.
+                  </td>
+                </tr>
+              )}
               {purchaseOrders.map((po) => (
                 <tr key={po.id} className="border-b border-gray-100">
                   <td className="py-4 pr-4 font-medium text-gray-900">#{po.id}</td>
