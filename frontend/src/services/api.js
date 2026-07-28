@@ -351,6 +351,19 @@ export const backupAPI = {
   },
 }
 
+// Feedback API
+export const feedbackAPI = {
+  // User-facing
+  submit: (data) => api.post('/feedback/', data),
+  getMine: () => api.get('/feedback/mine/'),
+  // Admin-facing
+  getAll: (params) => api.get('/feedback/admin/', { params }),
+  getStats: () => api.get('/feedback/admin/stats/'),
+  exportCsv: (params) => api.get('/feedback/admin/export/csv/', { params, responseType: 'blob' }),
+  updateStatus: (id, data) => api.patch(`/feedback/admin/${id}/`, data),
+  delete: (id) => api.delete(`/feedback/admin/${id}/`),
+}
+
 // Barcode API (via products)
 export const barcodeAPI = {
   lookup: (code) => api.get('/products/barcode_lookup/', { params: { code } }),

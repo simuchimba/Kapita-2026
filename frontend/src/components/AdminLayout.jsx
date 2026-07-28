@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { billingAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import {
@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquarePlus,
   Package,
   Truck,
   UploadCloud,
@@ -22,14 +23,19 @@ const navItems = [
   { name: 'Subscriptions', href: '/admin/subscriptions', icon: BadgeCheck },
   { name: 'Purchase Orders', href: '/admin/purchase-orders', icon: Package },
   { name: 'Suppliers', href: '/admin/suppliers', icon: Truck },
+  { name: 'Feedback', href: '/admin/feedback', icon: MessageSquarePlus },
   { name: 'Activity', href: '/admin/activity', icon: Activity },
 ]
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
+
+  const currentPage = navItems.find((item) => location.pathname.startsWith(item.href))
+  const initial = (user?.first_name || user?.username || '?').charAt(0).toUpperCase()
 
   useEffect(() => {
     billingAPI.getAdminOverview()
@@ -124,17 +130,31 @@ export default function AdminLayout() {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white/95 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/95 px-4 backdrop-blur sm:px-6">
           <button type="button" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
-          <div className="hidden lg:block">
-            <p className="text-sm font-medium text-gray-500">Kapita SaaS Administration</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-800">
-              Admin
-            </span>
+
+          <h1 className="truncate text-lg font-semibold text-gray-900">
+            {currentPage?.name || 'Admin'}
+          </h1>
+
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden items-center gap-2 sm:flex">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-800">
+                {initial}
+              </div>
+              <span className="text-sm font-medium text-gray-700">{user?.username}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </header>
 
