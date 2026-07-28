@@ -2,6 +2,7 @@
 Django settings for kapita project.
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, AutoConfig
@@ -180,6 +181,15 @@ elif VERCEL:
 else:
     default_media_root = str(BASE_DIR / 'media')
 MEDIA_ROOT = config('MEDIA_ROOT_PATH', default=default_media_root)
+
+# Optional: persistent cloud media storage (recommended in production — Render's
+# free plan has no persistent disk, so local-disk uploads are lost on every deploy/restart).
+# Uses local disk unless CLOUDINARY_URL is set, so this is a no-op until configured.
+CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
+if CLOUDINARY_URL:
+    os.environ.setdefault('CLOUDINARY_URL', CLOUDINARY_URL)
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

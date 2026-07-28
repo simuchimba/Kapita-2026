@@ -40,8 +40,10 @@ export const useAuthStore = create((set, get) => ({
 
             return { success: true, user: profileResponse.data }
         } catch (error) {
+            const nonFieldErrors = error.response?.data?.non_field_errors
             const message =
                 error.response?.data?.detail ||
+                (Array.isArray(nonFieldErrors) ? nonFieldErrors[0] : nonFieldErrors) ||
                 (error.response?.data?.offline
                     ? 'No internet connection. Please go online and try again.'
                     : (!navigator.onLine
@@ -56,7 +58,7 @@ export const useAuthStore = create((set, get) => ({
                 loading: false,
                 isAuthenticated: false,
             })
-            return { success: false, error: error.response?.data || { detail: message } }
+            return { success: false, error: { ...error.response?.data, detail: message } }
         }
     },
 
@@ -122,8 +124,11 @@ export const useAuthStore = create((set, get) => ({
         if (!refreshToken) throw error
 
         const refreshResponse = await authAPI.refreshToken(refreshToken)
-        const { access } = refreshResponse.data
+        const { access, refresh: newRefresh } = refreshResponse.data
         setToken('access_token', access)
+        if (newRefresh) {
+          setToken('refresh_token', newRefresh)
+        }
 
         const profileResponse = await authAPI.getProfile()
         set({

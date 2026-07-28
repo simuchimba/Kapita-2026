@@ -21,8 +21,13 @@ export default function AdminLogin() {
       return
     }
 
-    logout()
-    setError('Admin access required. Please use an admin account.')
+    if (result.success && !result.user?.is_staff) {
+      logout()
+      setError('Admin access required. Please use an admin account.')
+      return
+    }
+
+    setError(result.error?.detail || 'Login failed. Check your username/email and password.')
   }
 
   return (

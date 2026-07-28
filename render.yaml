@@ -82,3 +82,6 @@ services:
       - key: DEFAULT_FROM_EMAIL
         sync: false
         description: "From email address"
+      - key: CLOUDINARY_URL
+        sync: false
+        description: "Optional but recommended: Cloudinary URL (cloudinary://key:secret@cloud_name) for persistent file uploads — Render's free plan has no persistent disk, so payment-proof images are lost on every deploy without this. Free tier at cloudinary.com is sufficient."
