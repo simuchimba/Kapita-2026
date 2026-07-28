@@ -78,10 +78,6 @@ export default function Dashboard() {
         creditsAPI.getAll(),
       ])
 
-      console.log('Dashboard data:', dashboardRes.data)
-      console.log('Sales data:', salesRes.data)
-      console.log('Expenses data:', expensesRes.data)
-
       setDashboardData(dashboardRes.data)
       setDailySales(salesRes.data)
       setExpensesByCategory(expensesRes.data)

@@ -14,6 +14,8 @@ from .views import (
     RevokeSubscriptionView,
     ActivityLogView,
     DeleteUserView,
+    AdminPurchaseOrdersView,
+    AdminSuppliersView,
 )
 
 urlpatterns = [
@@ -31,4 +33,6 @@ urlpatterns = [
     path('admin/subscriptions/<int:user_id>/extend/', ExtendSubscriptionView.as_view(), name='admin-extend-subscription'),
     path('admin/subscriptions/<int:user_id>/revoke/', RevokeSubscriptionView.as_view(), name='admin-revoke-subscription'),
     path('admin/activity/', ActivityLogView.as_view(), name='admin-activity'),
+    path('admin/purchase-orders/', AdminPurchaseOrdersView.as_view(), name='admin-purchase-orders'),
+    path('admin/suppliers/', AdminSuppliersView.as_view(), name='admin-suppliers'),
 ]

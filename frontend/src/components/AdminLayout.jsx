@@ -8,6 +8,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Package,
+  Truck,
   UploadCloud,
   Users,
   X,
@@ -18,6 +20,8 @@ const navItems = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Payments', href: '/admin/payments', icon: UploadCloud },
   { name: 'Subscriptions', href: '/admin/subscriptions', icon: BadgeCheck },
+  { name: 'Purchase Orders', href: '/admin/purchase-orders', icon: Package },
+  { name: 'Suppliers', href: '/admin/suppliers', icon: Truck },
   { name: 'Activity', href: '/admin/activity', icon: Activity },
 ]
 

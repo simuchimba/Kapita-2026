@@ -83,8 +83,11 @@ api.interceptors.response.use(
           refresh: refreshToken,
         })
 
-        const { access } = response.data
+        const { access, refresh: newRefresh } = response.data
         setToken('access_token', access)
+        if (newRefresh) {
+          setToken('refresh_token', newRefresh)
+        }
 
         originalRequest.headers.Authorization = `Bearer ${access}`
         return api(originalRequest)
@@ -229,6 +232,8 @@ export const billingAPI = {
   extendSubscription: (userId, data) => api.post(`/billing/admin/subscriptions/${userId}/extend/`, data),
   revokeSubscription: (userId) => api.post(`/billing/admin/subscriptions/${userId}/revoke/`),
   getActivityLogs: () => api.get('/billing/admin/activity/'),
+  getAdminPurchaseOrders: (params) => api.get('/billing/admin/purchase-orders/', { params }),
+  getAdminSuppliers: (params) => api.get('/billing/admin/suppliers/', { params }),
 }
 
 // Personal Finance API (separate from business)

@@ -2,20 +2,24 @@ import { useEffect, useState } from 'react'
 import { Search, RefreshCw } from 'lucide-react'
 import Card from '../../components/Card'
 import Loading from '../../components/Loading'
-import { suppliersAPI } from '../../services/api'
+import { billingAPI } from '../../services/api'
 
 export default function AdminSuppliers() {
   const [loading, setLoading] = useState(true)
   const [suppliers, setSuppliers] = useState([])
   const [search, setSearch] = useState('')
+  const [error, setError] = useState('')
 
   const loadSuppliers = async () => {
     setLoading(true)
+    setError('')
     try {
-      const res = await suppliersAPI.getAll({ search })
+      const res = await billingAPI.getAdminSuppliers({ search })
       setSuppliers(res.data?.results || res.data || [])
     } catch (err) {
       console.error(err)
+      setSuppliers([])
+      setError(err.response?.data?.detail || 'Failed to load suppliers. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -51,6 +55,15 @@ export default function AdminSuppliers() {
         </button>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-center justify-between">
+          <p className="text-sm text-red-600">{error}</p>
+          <button type="button" onClick={loadSuppliers} className="btn btn-secondary btn-sm">
+            Retry
+          </button>
+        </div>
+      )}
+
       <Card>
         <form onSubmit={handleSearch} className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
@@ -84,6 +97,13 @@ export default function AdminSuppliers() {
               </tr>
             </thead>
             <tbody>
+              {suppliers.length === 0 && !error && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                    No suppliers found.
+                  </td>
+                </tr>
+              )}
               {suppliers.map((supplier) => (
                 <tr key={supplier.id} className="border-b border-gray-100">
                   <td className="py-4 pr-4">

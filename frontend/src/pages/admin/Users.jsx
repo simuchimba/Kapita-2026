@@ -16,14 +16,18 @@ export default function AdminUsers() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
+  const [error, setError] = useState('')
 
   const loadUsers = async () => {
     setLoading(true)
+    setError('')
     try {
       const res = await billingAPI.getAdminUsers({ search, status: statusFilter })
       setUsers(res.data || [])
     } catch (err) {
       console.error(err)
+      setUsers([])
+      setError(err.response?.data?.detail || 'Failed to load users. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -92,6 +96,15 @@ export default function AdminUsers() {
         <p className="mt-1 text-gray-600">Search, filter, and export all platform users.</p>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-center justify-between">
+          <p className="text-sm text-red-600">{error}</p>
+          <button type="button" onClick={loadUsers} className="btn btn-secondary btn-sm">
+            Retry
+          </button>
+        </div>
+      )}
+
       <Card>
         <form onSubmit={handleSearch} className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
@@ -138,6 +151,13 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
+              {users.length === 0 && !error && (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center text-gray-500">
+                    No users found.
+                  </td>
+                </tr>
+              )}
               {users.map((user) => (
                 <tr key={user.id} className="border-b border-gray-100">
                   <td className="py-4 pr-4">
