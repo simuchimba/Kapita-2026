@@ -100,7 +100,7 @@ export default function SuppliersScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -230,7 +230,7 @@ export default function SuppliersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   deleteButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#dc2626',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

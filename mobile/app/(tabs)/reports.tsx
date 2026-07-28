@@ -41,7 +41,7 @@ export default function ReportsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -147,7 +147,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
     alignItems: 'center',
   },
   periodButtonActive: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   periodButtonText: {
     fontSize: 14,
@@ -225,10 +225,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   profit: {
-    color: '#10b981',
+    color: '#059669',
   },
   loss: {
-    color: '#ef4444',
+    color: '#dc2626',
   },
   reportButton: {
     backgroundColor: '#fff',
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   reportButtonText: {
-    color: '#10b981',
+    color: '#059669',
     fontSize: 16,
     fontWeight: 'bold',
   },

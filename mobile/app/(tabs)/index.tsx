@@ -26,7 +26,7 @@ export default function DashboardScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -81,7 +81,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 24,
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   welcomeText: {
     fontSize: 24,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   section: {
     padding: 16,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   capitalValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   capitalLabel: {
     fontSize: 14,

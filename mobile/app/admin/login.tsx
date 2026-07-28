@@ -80,7 +80,7 @@ export default function AdminLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: '#f9fafb' },
   content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   title: { fontSize: 48, fontWeight: 'bold', color: '#3b82f6', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 48 },

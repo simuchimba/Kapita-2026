@@ -67,11 +67,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   header: {
     padding: 24,
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   title: {
     fontSize: 24,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   logoutButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#dc2626',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '../src/context/AuthContext';
 import { NetworkProvider } from '../src/context/NetworkContext';
 import { OfflineIndicator } from '../src/components/OfflineIndicator';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { colors } from '../src/constants/theme';
 
 export default function RootLayout() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -31,23 +33,25 @@ export default function RootLayout() {
 
   if (!isInitialized) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-        <ActivityIndicator size="large" color="#10b981" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+        <ActivityIndicator size="large" color={colors.primary[600]} />
       </View>
     );
   }
 
   return (
-    <AuthProvider>
-      <NetworkProvider>
-        <OfflineIndicator />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-          <Stack.Screen name="admin/login" options={{ headerShown: false }} />
-        </Stack>
-      </NetworkProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <NetworkProvider>
+          <OfflineIndicator />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+            <Stack.Screen name="admin/login" options={{ headerShown: false }} />
+          </Stack>
+        </NetworkProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

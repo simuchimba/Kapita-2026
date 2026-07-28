@@ -85,7 +85,7 @@ export default function PurchaseOrdersScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -205,7 +205,7 @@ export default function PurchaseOrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statusReceived: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   statusPending: {
     backgroundColor: '#f59e0b',
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   receiveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

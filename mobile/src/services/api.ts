@@ -39,8 +39,11 @@ api.interceptors.response.use(
             refresh: refreshToken,
           });
           
-          const { access } = response.data;
+          const { access, refresh: newRefresh } = response.data;
           await saveToken(access);
+          if (newRefresh) {
+            await saveRefreshToken(newRefresh);
+          }
           
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
@@ -498,6 +501,94 @@ export const billingAPI = {
 
   getAdminOverview: async () => {
     const response = await api.get('/billing/admin/overview/');
+    return response.data;
+  },
+
+  getAdminUsers: async (params?: any) => {
+    const response = await api.get('/billing/admin/users/', { params });
+    return response.data;
+  },
+
+  deleteUser: async (userId: number) => {
+    const response = await api.delete(`/billing/admin/users/${userId}/delete/`);
+    return response.data;
+  },
+
+  getAdminPayments: async (params?: any) => {
+    const response = await api.get('/billing/admin/payments/', { params });
+    return response.data;
+  },
+
+  approvePayment: async (paymentId: number, data?: any) => {
+    const response = await api.post(`/billing/admin/payments/${paymentId}/approve/`, data);
+    return response.data;
+  },
+
+  rejectPayment: async (paymentId: number, data?: any) => {
+    const response = await api.post(`/billing/admin/payments/${paymentId}/reject/`, data);
+    return response.data;
+  },
+
+  getSubscriptionHistory: async (userId: number) => {
+    const response = await api.get(`/billing/admin/subscriptions/${userId}/history/`);
+    return response.data;
+  },
+
+  extendSubscription: async (userId: number, data: any) => {
+    const response = await api.post(`/billing/admin/subscriptions/${userId}/extend/`, data);
+    return response.data;
+  },
+
+  revokeSubscription: async (userId: number) => {
+    const response = await api.post(`/billing/admin/subscriptions/${userId}/revoke/`);
+    return response.data;
+  },
+
+  getActivityLogs: async () => {
+    const response = await api.get('/billing/admin/activity/');
+    return response.data;
+  },
+
+  getAdminPurchaseOrders: async (params?: any) => {
+    const response = await api.get('/billing/admin/purchase-orders/', { params });
+    return response.data;
+  },
+
+  getAdminSuppliers: async (params?: any) => {
+    const response = await api.get('/billing/admin/suppliers/', { params });
+    return response.data;
+  },
+};
+
+// Feedback API
+export const feedbackAPI = {
+  submit: async (data: { category: string; rating: number | null; title: string; message: string; page: string }) => {
+    const response = await api.post('/feedback/', data);
+    return response.data;
+  },
+
+  getMine: async () => {
+    const response = await api.get('/feedback/mine/');
+    return response.data;
+  },
+
+  getAll: async (params?: any) => {
+    const response = await api.get('/feedback/admin/', { params });
+    return response.data;
+  },
+
+  getStats: async () => {
+    const response = await api.get('/feedback/admin/stats/');
+    return response.data;
+  },
+
+  updateStatus: async (id: number, data: { status?: string; admin_notes?: string }) => {
+    const response = await api.patch(`/feedback/admin/${id}/`, data);
+    return response.data;
+  },
+
+  deleteFeedback: async (id: number) => {
+    const response = await api.delete(`/feedback/admin/${id}/`);
     return response.data;
   },
 };

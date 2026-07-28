@@ -71,7 +71,7 @@ export default function CreditsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -231,7 +231,7 @@ export default function CreditsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   emptyContainer: {
     flex: 1,
@@ -327,17 +327,17 @@ const styles = StyleSheet.create({
   },
   creditPaid: {
     fontSize: 14,
-    color: '#10b981',
+    color: '#059669',
     marginTop: 4,
   },
   creditRemaining: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: '#dc2626',
     marginTop: 4,
   },
   paymentButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

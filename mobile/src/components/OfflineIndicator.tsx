@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   syncButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,

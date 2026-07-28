@@ -78,7 +78,7 @@ export default function PromotionsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -219,7 +219,7 @@ export default function PromotionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   promotionDiscount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   promotionDates: {
     fontSize: 12,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statusActive: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   statusInactive: {
     backgroundColor: '#6b7280',
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

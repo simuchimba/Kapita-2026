@@ -63,7 +63,7 @@ export default function ReinvestmentsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -189,7 +189,7 @@ export default function ReinvestmentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   emptyContainer: {
     flex: 1,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   reinvestmentAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
     marginTop: 4,
   },
   reinvestmentMargin: {
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   reinvestmentReturn: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
     marginTop: 4,
   },
   modalContainer: {
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

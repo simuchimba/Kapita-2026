@@ -232,7 +232,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   header: {
     padding: 16,
@@ -292,12 +292,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   actionButtonText: {
-    color: '#10b981',
+    color: '#059669',
     fontSize: 16,
     fontWeight: 'bold',
   },
   dangerButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#dc2626',
   },
   dangerButtonText: {
     color: '#fff',
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

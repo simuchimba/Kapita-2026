@@ -32,7 +32,7 @@ export default function AnalyticsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -50,7 +50,7 @@ export default function AnalyticsScreen() {
     propsForDots: {
       r: '6',
       strokeWidth: '2',
-      stroke: '#10b981',
+      stroke: '#059669',
     },
   };
 
@@ -167,7 +167,7 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -230,13 +230,13 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   profit: {
-    color: '#10b981',
+    color: '#059669',
   },
   loss: {
-    color: '#ef4444',
+    color: '#dc2626',
   },
   cashflowContainer: {
     backgroundColor: '#fff',
@@ -263,12 +263,12 @@ const styles = StyleSheet.create({
   cashflowIn: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   cashflowOut: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: '#dc2626',
   },
   cashflowNet: {
     fontSize: 16,

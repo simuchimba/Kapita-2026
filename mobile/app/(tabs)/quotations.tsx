@@ -64,7 +64,7 @@ export default function QuotationsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -167,7 +167,7 @@ export default function QuotationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   quotationTotal: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
     marginTop: 4,
   },
   quotationDate: {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statusAccepted: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   statusPending: {
     backgroundColor: '#f59e0b',
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   modalButtonText: {
     color: '#fff',

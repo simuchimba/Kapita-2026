@@ -29,7 +29,7 @@ export default function BillingScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -105,7 +105,7 @@ export default function BillingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
@@ -153,10 +153,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statusActive: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   statusInactive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#dc2626',
   },
   statusBadgeText: {
     color: '#fff',
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   paymentButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   paymentAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#059669',
   },
   paymentDate: {
     fontSize: 14,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   paymentApproved: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
   },
   paymentPending: {
     backgroundColor: '#f59e0b',
