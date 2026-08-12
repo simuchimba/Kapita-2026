@@ -33,6 +33,15 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f69222ac-9b04-46c8-ac56-05a36ed3d248"
+      }
+    },
+    "owner": "wazdev"
   }
 }
