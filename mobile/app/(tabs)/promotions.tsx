@@ -43,11 +43,12 @@ export default function PromotionsScreen() {
     }
 
     try {
+      const { applicable_products, ...rest } = formData;
       await promotionsAPI.create({
-        ...formData,
+        ...rest,
         discount_value: parseFloat(formData.discount_value),
-        applicable_products: formData.applicable_products ? 
-          formData.applicable_products.split(',').map((id: string) => parseInt(id.trim())) : [],
+        product_ids: applicable_products ?
+          applicable_products.split(',').map((id: string) => parseInt(id.trim())).filter((n) => !isNaN(n)) : [],
       });
       setFormData({
         name: '',
@@ -120,10 +121,10 @@ export default function PromotionsScreen() {
                 </View>
                 <View style={[
                   styles.statusBadge,
-                  promotion.is_active ? styles.statusActive : styles.statusInactive
+                  promotion.is_currently_active ? styles.statusActive : styles.statusInactive
                 ]}>
                   <Text style={styles.statusText}>
-                    {promotion.is_active ? 'Active' : 'Inactive'}
+                    {promotion.is_currently_active ? 'Active' : 'Inactive'}
                   </Text>
                 </View>
               </View>
@@ -132,7 +133,7 @@ export default function PromotionsScreen() {
                 onPress={() => handleToggleStatus(promotion.id)}
               >
                 <Text style={styles.toggleButtonText}>
-                  {promotion.is_active ? 'Deactivate' : 'Activate'}
+                  {promotion.status === 'active' ? 'Deactivate' : 'Activate'}
                 </Text>
               </TouchableOpacity>
             </View>

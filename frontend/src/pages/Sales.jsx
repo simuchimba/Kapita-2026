@@ -504,7 +504,7 @@ export default function Sales() {
                 <option value="">Select product</option>
                 {products.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.name} {p.barcode ? `(${p.barcode})` : ''} - Stock: {p.quantity}
+                    {p.name} {p.barcode ? `(${p.barcode})` : ''} - Stock: {p.quantity} {p.unit || 'pcs'}
                   </option>
                 ))}
               </select>

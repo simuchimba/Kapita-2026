@@ -33,7 +33,7 @@ export default function Products() {
   const barcodeImgRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '', category: '', sku: '', barcode: '',
-    buying_price: '', selling_price: '', quantity: '',
+    buying_price: '', selling_price: '', quantity: '', unit: 'pcs',
     minimum_stock: '10', supplier: '', description: '',
   })
 
@@ -124,6 +124,7 @@ export default function Products() {
       buying_price: product.buying_price,
       selling_price: product.selling_price,
       quantity: product.quantity,
+      unit: product.unit || 'pcs',
       minimum_stock: product.minimum_stock,
       supplier: product.supplier || '',
       description: product.description || '',
@@ -135,7 +136,7 @@ export default function Products() {
     setEditingProduct(null)
     setFormData({
       name: '', category: '', sku: '', barcode: '',
-      buying_price: '', selling_price: '', quantity: '',
+      buying_price: '', selling_price: '', quantity: '', unit: 'pcs',
       minimum_stock: '10', supplier: '', description: '',
     })
   }
@@ -176,7 +177,7 @@ export default function Products() {
       header: 'Quantity',
       render: (row) => (
         <span className={row.is_low_stock ? 'text-red-600 font-semibold' : ''}>
-          {row.quantity}
+          {row.quantity} {row.unit || 'pcs'}
           {row.is_low_stock && ' ⚠️'}
         </span>
       )
@@ -353,6 +354,22 @@ export default function Products() {
               <label className="label">Quantity *</label>
               <input type="number" required className="input" value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Unit</label>
+              <input type="text" list="product-units" className="input" value={formData.unit}
+                placeholder="pcs"
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })} />
+              <datalist id="product-units">
+                <option value="pcs" />
+                <option value="kg" />
+                <option value="heap" />
+                <option value="pack" />
+                <option value="bundle" />
+                <option value="box" />
+                <option value="litre" />
+                <option value="dozen" />
+              </datalist>
             </div>
             <div>
               <label className="label">Minimum Stock *</label>

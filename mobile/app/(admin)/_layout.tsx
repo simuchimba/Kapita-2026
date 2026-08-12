@@ -1,6 +1,5 @@
 import { Drawer } from 'expo-router/drawer';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect, useRouter } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
 import {
@@ -58,18 +57,10 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 }
 
 export default function AdminDrawerLayout() {
-  const { isStaff, logout } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isStaff) {
-      logout();
-      router.replace('/admin/login');
-    }
-  }, [isStaff, router, logout]);
+  const { isStaff } = useAuth();
 
   if (!isStaff) {
-    return null;
+    return <Redirect href="/admin/login" />;
   }
 
   return (

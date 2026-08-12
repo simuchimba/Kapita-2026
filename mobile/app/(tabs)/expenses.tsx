@@ -2,6 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { expensesAPI } from '../../src/services/api';
 
+const CATEGORY_OPTIONS = [
+  { value: 'rent', label: 'Rent' },
+  { value: 'utilities', label: 'Utilities' },
+  { value: 'airtime', label: 'Airtime' },
+  { value: 'transport', label: 'Transport' },
+  { value: 'stock_purchase', label: 'Stock Purchase' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'salaries', label: 'Salaries' },
+  { value: 'personal_withdrawal', label: 'Personal Withdrawal' },
+  { value: 'other', label: 'Other' },
+];
+
 export default function ExpensesScreen() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -148,7 +160,9 @@ export default function ExpensesScreen() {
             <View key={expense.id} style={styles.expenseCard}>
               <View style={styles.expenseInfo}>
                 <Text style={styles.expenseTitle}>{expense.title}</Text>
-                <Text style={styles.expenseCategory}>{expense.category}</Text>
+                <Text style={styles.expenseCategory}>
+                  {CATEGORY_OPTIONS.find((c) => c.value === expense.category)?.label || expense.category}
+                </Text>
                 <Text style={styles.expenseDate}>{new Date(expense.date).toLocaleDateString()}</Text>
                 {expense.notes && (
                   <Text style={styles.expenseNotes}>{expense.notes}</Text>
@@ -198,12 +212,19 @@ export default function ExpensesScreen() {
               keyboardType="decimal-pad"
             />
             <Text style={styles.label}>Category</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Category"
-              value={formData.category}
-              onChangeText={(text) => setFormData({ ...formData, category: text })}
-            />
+            <View style={styles.categoryChips}>
+              {CATEGORY_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.categoryChip, formData.category === opt.value && styles.categoryChipActive]}
+                  onPress={() => setFormData({ ...formData, category: opt.value })}
+                >
+                  <Text style={[styles.categoryChipText, formData.category === opt.value && styles.categoryChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <Text style={styles.label}>Date</Text>
             <TextInput
               style={styles.input}
@@ -420,6 +441,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+  },
+  categoryChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  categoryChipActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  categoryChipText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',

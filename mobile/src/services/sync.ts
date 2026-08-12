@@ -233,14 +233,7 @@ class SyncService {
   private async updateLastSyncTimestamp(): Promise<void> {
     const database = await getDatabase();
     const timestamp = new Date().toISOString();
-    
-    await database.execAsync(`
-      CREATE TABLE IF NOT EXISTS sync_metadata (
-        id INTEGER PRIMARY KEY,
-        timestamp TEXT
-      );
-    `);
-    
+
     await database.runAsync(
       'INSERT OR REPLACE INTO sync_metadata (id, timestamp) VALUES (1, ?)',
       [timestamp]

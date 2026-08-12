@@ -181,6 +181,13 @@ const initializeDatabase = async () => {
     );
   `);
 
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS sync_metadata (
+      id INTEGER PRIMARY KEY,
+      timestamp TEXT
+    );
+  `);
+
   // Create indexes for better performance
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_products_sync ON products(sync_status);

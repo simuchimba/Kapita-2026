@@ -1,290 +1,247 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { salesAPI, productsAPI, customersAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import Badge from '../../src/components/ui/Badge';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
+
+interface Product {
+  id: number;
+  name: string;
+  selling_price: string | number;
+  quantity: number;
+  unit: string;
+}
+interface Customer {
+  id: number;
+  name: string;
+}
+interface Sale {
+  id: number;
+  product_details?: Product;
+  customer_details?: Customer;
+  quantity: number;
+  unit_price: string | number;
+  total_amount: string | number;
+  payment_type: string;
+  created_at: string;
+}
+
+const PAYMENT_TYPES = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'mobile_money', label: 'Mobile Money' },
+  { value: 'credit', label: 'Credit' },
+];
 
 export default function SalesScreen() {
-  const [sales, setSales] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newSale, setNewSale] = useState({ product: '', customer: '', quantity: '1' });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [quantity, setQuantity] = useState('1');
+  const [paymentType, setPaymentType] = useState('cash');
 
-  const loadData = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
       const [salesData, productsData, customersData] = await Promise.all([
         salesAPI.list(),
         productsAPI.list(),
         customersAPI.list(),
       ]);
-      setSales(salesData);
-      setProducts(productsData);
-      setCustomers(customersData);
+      setSales(salesData || []);
+      setProducts(productsData || []);
+      setCustomers(customersData || []);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load sales data:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAddModal = () => {
+    setSelectedProduct(null);
+    setSelectedCustomer(null);
+    setQuantity('1');
+    setPaymentType('cash');
+    setShowAddModal(true);
   };
 
   const handleAddSale = async () => {
-    if (!newSale.product || !newSale.quantity) {
-      Alert.alert('Error', 'Please select a product and quantity');
+    const qty = parseInt(quantity, 10);
+    if (!selectedProduct || !qty || qty < 1) {
+      Alert.alert('Missing info', 'Please select a product and a valid quantity.');
+      return;
+    }
+    if (paymentType === 'credit' && !selectedCustomer) {
+      Alert.alert('Customer required', 'Credit sales require a customer to be selected.');
       return;
     }
 
+    setSaving(true);
     try {
       await salesAPI.create({
-        product: parseInt(newSale.product),
-        customer: newSale.customer ? parseInt(newSale.customer) : null,
-        quantity: parseInt(newSale.quantity),
+        product: selectedProduct.id,
+        customer: selectedCustomer?.id ?? null,
+        quantity: qty,
+        unit_price: selectedProduct.selling_price,
+        payment_type: paymentType,
+        ...(paymentType === 'credit' ? { due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) } : {}),
       });
-      setNewSale({ product: '', customer: '', quantity: '1' });
       setShowAddModal(false);
-      loadData();
-      Alert.alert('Success', 'Sale recorded successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to record sale');
+      load();
+    } catch (error: any) {
+      const detail = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0];
+      Alert.alert('Error', detail || 'Failed to record sale');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Sales</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ New Sale</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.header}>
+        <Text style={typography.title}>Sales</Text>
+        <Button title="New Sale" size="sm" onPress={openAddModal} />
+      </View>
 
-        {sales.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No sales yet</Text>
-          </View>
-        ) : (
-          sales.map((sale) => (
-            <View key={sale.id} style={styles.saleCard}>
-              <View style={styles.saleInfo}>
-                <Text style={styles.saleProduct}>{sale.product_name || 'Product'}</Text>
-                <Text style={styles.saleCustomer}>
-                  {sale.customer_name || 'Walk-in customer'}
+      <FlatList
+        data={sales}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No sales recorded yet." /> : null}
+        renderItem={({ item }) => (
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.product_details?.name || 'Unknown product'}</Text>
+                <Text style={typography.caption}>
+                  {item.quantity} {item.product_details?.unit || 'pcs'} · {item.customer_details?.name || 'Walk-in customer'}
                 </Text>
               </View>
-              <View style={styles.saleMeta}>
-                <Text style={styles.saleQuantity}>Qty: {sale.quantity}</Text>
-                <Text style={styles.saleTotal}>${sale.total}</Text>
-              </View>
+              <Badge label={item.payment_type.replace('_', ' ')} tone={item.payment_type === 'credit' ? 'amber' : 'green'} />
             </View>
-          ))
+            <View style={styles.metaRow}>
+              <Text style={styles.amount}>K{Number(item.total_amount).toLocaleString()}</Text>
+              <Text style={typography.caption}>{new Date(item.created_at).toLocaleDateString()}</Text>
+            </View>
+          </Card>
         )}
-      </ScrollView>
+      />
 
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>New Sale</Text>
-            
-            <Text style={styles.label}>Product</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Select product"
-              value={newSale.product}
-              onChangeText={(text) => setNewSale({ ...newSale, product: text })}
-            />
-            
-            <Text style={styles.label}>Customer (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Select customer"
-              value={newSale.customer}
-              onChangeText={(text) => setNewSale({ ...newSale, customer: text })}
-            />
-            
-            <Text style={styles.label}>Quantity</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Quantity"
-              value={newSale.quantity}
-              onChangeText={(text) => setNewSale({ ...newSale, quantity: text })}
-              keyboardType="number-pad"
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddSale}
-              >
-                <Text style={styles.modalButtonText}>Record Sale</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      <Modal visible={showAddModal} onClose={() => setShowAddModal(false)} title="New sale">
+        <Text style={styles.label}>Product *</Text>
+        <View style={styles.pickerList}>
+          {products.length === 0 && <Text style={typography.caption}>No products yet — add one in the Products tab first.</Text>}
+          {products.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={[styles.pickerRow, selectedProduct?.id === p.id && styles.pickerRowActive]}
+              onPress={() => setSelectedProduct(p)}
+            >
+              <Text style={[styles.pickerRowText, selectedProduct?.id === p.id && styles.pickerRowTextActive]}>
+                {p.name} — K{Number(p.selling_price).toLocaleString()} ({p.quantity} {p.unit || 'pcs'} left)
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        <Text style={styles.label}>Quantity *</Text>
+        <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" />
+
+        <Text style={styles.label}>Payment type *</Text>
+        <View style={styles.chipRow}>
+          {PAYMENT_TYPES.map((pt) => (
+            <TouchableOpacity
+              key={pt.value}
+              style={[styles.chip, paymentType === pt.value && styles.chipActive]}
+              onPress={() => setPaymentType(pt.value)}
+            >
+              <Text style={[styles.chipText, paymentType === pt.value && styles.chipTextActive]}>{pt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Customer {paymentType === 'credit' ? '*' : '(optional)'}</Text>
+        <View style={styles.pickerList}>
+          <TouchableOpacity style={[styles.pickerRow, !selectedCustomer && styles.pickerRowActive]} onPress={() => setSelectedCustomer(null)}>
+            <Text style={[styles.pickerRowText, !selectedCustomer && styles.pickerRowTextActive]}>Walk-in customer</Text>
+          </TouchableOpacity>
+          {customers.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              style={[styles.pickerRow, selectedCustomer?.id === c.id && styles.pickerRowActive]}
+              onPress={() => setSelectedCustomer(c)}
+            >
+              <Text style={[styles.pickerRowText, selectedCustomer?.id === c.id && styles.pickerRowTextActive]}>{c.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {selectedProduct && quantity ? (
+          <Text style={styles.totalPreview}>
+            Total: K{(Number(selectedProduct.selling_price) * (parseInt(quantity, 10) || 0)).toLocaleString()}
+          </Text>
+        ) : null}
+
+        <Button title="Record sale" loading={saving} onPress={handleAddSale} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.gray[50] },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  saleCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saleInfo: {
-    marginBottom: 12,
-  },
-  saleProduct: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  saleCustomer: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  saleMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  saleQuantity: {
-    fontSize: 14,
-    color: '#666',
-  },
-  saleTotal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    marginTop: 8,
-  },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  amount: { fontSize: 16, fontWeight: '700', color: colors.primary[700] },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  pickerList: { borderWidth: 1, borderColor: colors.gray[200], borderRadius: radius.sm, overflow: 'hidden' },
+  pickerRow: { paddingHorizontal: spacing.sm, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.gray[100] },
+  pickerRowActive: { backgroundColor: colors.primary[50] },
+  pickerRowText: { fontSize: 14, color: colors.gray[700] },
+  pickerRowTextActive: { color: colors.primary[700], fontWeight: '600' },
+  chipRow: { flexDirection: 'row', gap: spacing.xs },
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray[200] },
+  chipActive: { backgroundColor: colors.primary[600], borderColor: colors.primary[600] },
+  chipText: { fontSize: 13, color: colors.gray[600] },
+  chipTextActive: { color: colors.white, fontWeight: '600' },
+  totalPreview: { marginTop: spacing.md, fontSize: 16, fontWeight: '700', color: colors.gray[900], textAlign: 'right' },
 });

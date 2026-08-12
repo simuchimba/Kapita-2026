@@ -13,6 +13,11 @@ class Product(models.Model):
     buying_price = models.DecimalField(max_digits=12, decimal_places=2)
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
     quantity = models.IntegerField(default=0)
+    unit = models.CharField(
+        max_length=20,
+        default='pcs',
+        help_text='Unit the product is sold in, e.g. pcs, kg, heap, pack, bundle, box, litre, dozen',
+    )
     minimum_stock = models.IntegerField(default=10)
     supplier = models.CharField(max_length=255, blank=True, null=True)
     barcode = models.CharField(max_length=100, blank=True, null=True, db_index=True)

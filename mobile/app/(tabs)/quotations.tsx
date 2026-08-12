@@ -2,18 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { quotationsAPI, customersAPI, productsAPI } from '../../src/services/api';
 
+interface Customer { id: number; name: string; }
+interface Product { id: number; name: string; selling_price: string | number; }
+
 export default function QuotationsScreen() {
   const [quotations, setQuotations] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    customer: '',
-    items: '',
-    valid_until: '',
-    notes: '',
-  });
+
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [subject, setSubject] = useState('');
+  const [product, setProduct] = useState<Product | null>(null);
+  const [description, setDescription] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [unitPrice, setUnitPrice] = useState('');
+  const [validityPeriod, setValidityPeriod] = useState('30 days');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     loadData();
@@ -26,9 +33,9 @@ export default function QuotationsScreen() {
         customersAPI.list(),
         productsAPI.list(),
       ]);
-      setQuotations(quotationsRes.results || quotationsRes);
-      setCustomers(customersRes.results || customersRes);
-      setProducts(productsRes.results || productsRes);
+      setQuotations(quotationsRes || []);
+      setCustomers(customersRes || []);
+      setProducts(productsRes || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -36,28 +43,42 @@ export default function QuotationsScreen() {
     }
   };
 
+  const resetForm = () => {
+    setCustomer(null);
+    setSubject('');
+    setProduct(null);
+    setDescription('');
+    setQuantity('1');
+    setUnitPrice('');
+    setValidityPeriod('30 days');
+    setNotes('');
+  };
+
   const handleSubmit = async () => {
-    if (!formData.customer || !formData.items) {
-      Alert.alert('Error', 'Please fill in required fields');
+    const qty = parseInt(quantity, 10);
+    const price = parseFloat(unitPrice);
+    if (!subject.trim() || !description.trim() || !qty || !price) {
+      Alert.alert('Error', 'Please fill in subject, item description, quantity and price');
       return;
     }
 
+    setSaving(true);
     try {
       await quotationsAPI.create({
-        ...formData,
-        items: JSON.parse(formData.items),
+        customer: customer?.id ?? null,
+        subject: subject.trim(),
+        validity_period: validityPeriod,
+        notes,
+        items: [{ description: description.trim(), quantity: qty, unit_price: price }],
       });
-      setFormData({
-        customer: '',
-        items: '',
-        valid_until: '',
-        notes: '',
-      });
+      resetForm();
       setShowAddModal(false);
       loadData();
       Alert.alert('Success', 'Quotation created successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create quotation');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to create quotation');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -74,9 +95,9 @@ export default function QuotationsScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Quotations</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
+            onPress={() => { resetForm(); setShowAddModal(true); }}
           >
             <Text style={styles.addButtonText}>+ New Quote</Text>
           </TouchableOpacity>
@@ -91,11 +112,11 @@ export default function QuotationsScreen() {
             <View key={quotation.id} style={styles.quotationCard}>
               <View style={styles.quotationInfo}>
                 <Text style={styles.quotationCustomer}>
-                  {quotation.customer_details?.name || 'N/A'}
+                  {quotation.customer_details?.name || 'Walk-in customer'} — {quotation.subject}
                 </Text>
-                <Text style={styles.quotationTotal}>Total: ${quotation.total}</Text>
+                <Text style={styles.quotationTotal}>Total: K{Number(quotation.total_amount).toLocaleString()}</Text>
                 <Text style={styles.quotationDate}>
-                  Valid until: {quotation.valid_until || 'TBD'}
+                  Valid for: {quotation.validity_period || 'N/A'}
                 </Text>
                 <View style={[
                   styles.statusBadge,
@@ -111,36 +132,88 @@ export default function QuotationsScreen() {
 
       {showAddModal && (
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <ScrollView style={styles.modalContent}>
             <Text style={styles.modalTitle}>New Quotation</Text>
-            <Text style={styles.label}>Customer</Text>
+
+            <Text style={styles.label}>Subject *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Select customer"
-              value={formData.customer}
-              onChangeText={(text) => setFormData({ ...formData, customer: text })}
+              placeholder="e.g. Supply of 50 chairs"
+              value={subject}
+              onChangeText={setSubject}
             />
-            <Text style={styles.label}>Items (JSON)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder='[{"product": 1, "quantity": 2}]'
-              value={formData.items}
-              onChangeText={(text) => setFormData({ ...formData, items: text })}
-              multiline
-            />
-            <Text style={styles.label}>Valid Until</Text>
+
+            <Text style={styles.label}>Customer (optional)</Text>
+            <ScrollView style={styles.pickerList} nestedScrollEnabled>
+              <TouchableOpacity style={[styles.pickerRow, !customer && styles.pickerRowActive]} onPress={() => setCustomer(null)}>
+                <Text style={!customer ? styles.pickerRowTextActive : styles.pickerRowText}>Walk-in customer</Text>
+              </TouchableOpacity>
+              {customers.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.pickerRow, customer?.id === c.id && styles.pickerRowActive]}
+                  onPress={() => setCustomer(c)}
+                >
+                  <Text style={customer?.id === c.id ? styles.pickerRowTextActive : styles.pickerRowText}>{c.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.label}>Item — pick a product (optional shortcut)</Text>
+            <ScrollView style={styles.pickerList} nestedScrollEnabled>
+              {products.map((p) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.pickerRow, product?.id === p.id && styles.pickerRowActive]}
+                  onPress={() => {
+                    setProduct(p);
+                    setDescription(p.name);
+                    setUnitPrice(String(p.selling_price));
+                  }}
+                >
+                  <Text style={product?.id === p.id ? styles.pickerRowTextActive : styles.pickerRowText}>
+                    {p.name} — K{Number(p.selling_price).toLocaleString()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.label}>Item description *</Text>
             <TextInput
               style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={formData.valid_until}
-              onChangeText={(text) => setFormData({ ...formData, valid_until: text })}
+              placeholder="e.g. Plastic chairs"
+              value={description}
+              onChangeText={setDescription}
+            />
+            <Text style={styles.label}>Quantity *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="1"
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="number-pad"
+            />
+            <Text style={styles.label}>Unit price (K) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              value={unitPrice}
+              onChangeText={setUnitPrice}
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.label}>Valid for</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="30 days"
+              value={validityPeriod}
+              onChangeText={setValidityPeriod}
             />
             <Text style={styles.label}>Notes (Optional)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Notes"
-              value={formData.notes}
-              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              value={notes}
+              onChangeText={setNotes}
               multiline
             />
             <View style={styles.modalButtons}>
@@ -153,11 +226,12 @@ export default function QuotationsScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSubmit}
+                disabled={saving}
               >
-                <Text style={styles.modalButtonText}>Create</Text>
+                <Text style={styles.modalButtonText}>{saving ? 'Creating…' : 'Create'}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
       )}
     </View>
@@ -272,8 +346,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    width: '80%',
-    maxWidth: 400,
+    width: '85%',
+    maxWidth: 420,
+    maxHeight: '85%',
   },
   modalTitle: {
     fontSize: 20,
@@ -292,6 +367,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+  },
+  pickerList: {
+    maxHeight: 110,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  pickerRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  pickerRowActive: {
+    backgroundColor: '#f0fdf4',
+  },
+  pickerRowText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  pickerRowTextActive: {
+    fontSize: 14,
+    color: '#047857',
+    fontWeight: '600',
   },
   textArea: {
     height: 80,

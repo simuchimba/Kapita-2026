@@ -168,7 +168,7 @@ export const authAPI = {
 export const productsAPI = {
   list: async () => {
     const response = await api.get('/products/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -191,7 +191,7 @@ export const productsAPI = {
 export const salesAPI = {
   list: async () => {
     const response = await api.get('/sales/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -209,7 +209,7 @@ export const salesAPI = {
 export const customersAPI = {
   list: async () => {
     const response = await api.get('/customers/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -222,7 +222,7 @@ export const customersAPI = {
 export const creditsAPI = {
   list: async () => {
     const response = await api.get('/credits/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -245,7 +245,7 @@ export const creditsAPI = {
 export const expensesAPI = {
   list: async () => {
     const response = await api.get('/expenses/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -321,7 +321,7 @@ export const analyticsAPI = {
 export const reinvestmentsAPI = {
   list: async () => {
     const response = await api.get('/reinvestments/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -354,7 +354,7 @@ export const reinvestmentsAPI = {
 export const suppliersAPI = {
   list: async () => {
     const response = await api.get('/suppliers/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -377,7 +377,7 @@ export const suppliersAPI = {
 export const purchaseOrdersAPI = {
   list: async () => {
     const response = await api.get('/purchase-orders/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -405,7 +405,7 @@ export const purchaseOrdersAPI = {
 export const quotationsAPI = {
   list: async () => {
     const response = await api.get('/quotations/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -428,7 +428,7 @@ export const quotationsAPI = {
 export const promotionsAPI = {
   list: async () => {
     const response = await api.get('/promotions/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
 
   getActive: async () => {
@@ -461,7 +461,7 @@ export const promotionsAPI = {
 export const outgoingPaymentsAPI = {
   list: async () => {
     const response = await api.get('/outgoing-payments/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -569,12 +569,12 @@ export const feedbackAPI = {
 
   getMine: async () => {
     const response = await api.get('/feedback/mine/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
 
   getAll: async (params?: any) => {
     const response = await api.get('/feedback/admin/', { params });
-    return response.data;
+    return response.data.results ?? response.data;
   },
 
   getStats: async () => {
@@ -597,7 +597,7 @@ export const feedbackAPI = {
 export const personalFinanceAPI = {
   getTransactions: async (params?: any) => {
     const response = await api.get('/personal/transactions/', { params });
-    return response.data;
+    return response.data.results ?? response.data;
   },
   
   create: async (data: any) => {
@@ -643,7 +643,7 @@ export const chatAPI = {
 export const notificationsAPI = {
   getAll: async () => {
     const response = await api.get('/notifications/');
-    return response.data;
+    return response.data.results ?? response.data;
   },
 
   getUnread: async () => {

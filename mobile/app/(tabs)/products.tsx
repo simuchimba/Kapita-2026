@@ -1,302 +1,245 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { Plus, Trash2 } from 'lucide-react-native';
 import { productsAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import Badge from '../../src/components/ui/Badge';
+import SearchInput from '../../src/components/ui/SearchInput';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  sku: string;
+  buying_price: string | number;
+  selling_price: string | number;
+  quantity: number;
+  unit: string;
+  minimum_stock: number;
+  is_low_stock: boolean;
+}
+
+const UNIT_OPTIONS = ['pcs', 'kg', 'heap', 'pack', 'bundle', 'box', 'litre', 'dozen'];
+
+function generateSku() {
+  const letters = Array.from({ length: 2 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+  const digits = Math.floor(10000000 + Math.random() * 90000000);
+  return `SKU-${letters}${digits}`;
+}
+
+const EMPTY_FORM = {
+  name: '', category: '', buying_price: '', selling_price: '', quantity: '', unit: 'pcs', minimum_stock: '10',
+};
 
 export default function ProductsScreen() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '' });
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
       const data = await productsAPI.list();
-      setProducts(data);
+      setProducts(data || []);
     } catch (error) {
       console.error('Failed to load products:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAddModal = () => {
+    setForm(EMPTY_FORM);
+    setShowAddModal(true);
   };
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.stock) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!form.name.trim() || !form.category.trim() || !form.buying_price || !form.selling_price || !form.quantity) {
+      Alert.alert('Missing info', 'Name, category, buying price, selling price, and quantity are required.');
       return;
     }
-
+    setSaving(true);
     try {
       await productsAPI.create({
-        name: newProduct.name,
-        price: parseFloat(newProduct.price),
-        stock: parseInt(newProduct.stock),
+        name: form.name.trim(),
+        category: form.category.trim(),
+        sku: generateSku(),
+        buying_price: parseFloat(form.buying_price),
+        selling_price: parseFloat(form.selling_price),
+        quantity: parseInt(form.quantity, 10),
+        unit: form.unit.trim() || 'pcs',
+        minimum_stock: parseInt(form.minimum_stock, 10) || 10,
       });
-      setNewProduct({ name: '', price: '', stock: '' });
       setShowAddModal(false);
-      loadProducts();
-      Alert.alert('Success', 'Product added successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add product');
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to add product');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteProduct = async (id: number) => {
-    Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await productsAPI.delete(id);
-              loadProducts();
-              Alert.alert('Success', 'Product deleted');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete product');
-            }
-          },
+  const handleDeleteProduct = (product: Product) => {
+    Alert.alert('Delete product', `Delete "${product.name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await productsAPI.delete(product.id);
+            load();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete product');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
+  const filtered = products.filter((p) =>
+    !search.trim() ||
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.category.toLowerCase().includes(search.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Products</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add Product</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.header}>
+        <SearchInput placeholder="Search products" value={search} onChangeText={setSearch} />
+        <Button title="Add Product" size="sm" onPress={openAddModal} />
+      </View>
 
-        {products.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No products yet</Text>
-          </View>
-        ) : (
-          products.map((product) => (
-            <View key={product.id} style={styles.productCard}>
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productPrice}>${product.price}</Text>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No products yet. Tap Add Product to create your first one." /> : null}
+        renderItem={({ item }) => (
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={typography.caption}>{item.category} · {item.sku}</Text>
               </View>
-              <View style={styles.productMeta}>
-                <Text style={styles.stockText}>Stock: {product.stock}</Text>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteProduct(product.id)}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+              {item.is_low_stock && <Badge label="Low stock" tone="red" />}
             </View>
-          ))
+
+            <View style={styles.metaRow}>
+              <Text style={styles.price}>K{Number(item.selling_price).toLocaleString()}</Text>
+              <Text style={typography.caption}>
+                {item.quantity} {item.unit || 'pcs'} in stock
+              </Text>
+            </View>
+
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteProduct(item)}>
+                <Trash2 size={16} color={colors.danger} />
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
         )}
-      </ScrollView>
+      />
 
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Product</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Product Name"
-              value={newProduct.name}
-              onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Price"
-              value={newProduct.price}
-              onChangeText={(text) => setNewProduct({ ...newProduct, price: text })}
-              keyboardType="decimal-pad"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Stock Quantity"
-              value={newProduct.stock}
-              onChangeText={(text) => setNewProduct({ ...newProduct, stock: text })}
-              keyboardType="number-pad"
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddProduct}
-              >
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
+      <Modal visible={showAddModal} onClose={() => setShowAddModal(false)} title="Add product">
+        <View>
+          <Text style={styles.label}>Name *</Text>
+          <TextInput style={styles.input} value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder="e.g. Tomatoes" />
+
+          <Text style={styles.label}>Category *</Text>
+          <TextInput style={styles.input} value={form.category} onChangeText={(v) => setForm({ ...form, category: v })} placeholder="e.g. Vegetables" />
+
+          <View style={styles.row2}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Buying price (K) *</Text>
+              <TextInput style={styles.input} value={form.buying_price} onChangeText={(v) => setForm({ ...form, buying_price: v })} keyboardType="decimal-pad" placeholder="0.00" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Selling price (K) *</Text>
+              <TextInput style={styles.input} value={form.selling_price} onChangeText={(v) => setForm({ ...form, selling_price: v })} keyboardType="decimal-pad" placeholder="0.00" />
             </View>
           </View>
+
+          <View style={styles.row2}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Quantity *</Text>
+              <TextInput style={styles.input} value={form.quantity} onChangeText={(v) => setForm({ ...form, quantity: v })} keyboardType="number-pad" placeholder="0" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Unit</Text>
+              <TextInput style={styles.input} value={form.unit} onChangeText={(v) => setForm({ ...form, unit: v })} placeholder="pcs" />
+            </View>
+          </View>
+
+          <View style={styles.unitChips}>
+            {UNIT_OPTIONS.map((u) => (
+              <TouchableOpacity key={u} style={[styles.unitChip, form.unit === u && styles.unitChipActive]} onPress={() => setForm({ ...form, unit: u })}>
+                <Text style={[styles.unitChipText, form.unit === u && styles.unitChipTextActive]}>{u}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Minimum stock (low-stock alert threshold)</Text>
+          <TextInput style={styles.input} value={form.minimum_stock} onChangeText={(v) => setForm({ ...form, minimum_stock: v })} keyboardType="number-pad" placeholder="10" />
+
+          <Button title="Save product" loading={saving} onPress={handleAddProduct} style={{ marginTop: spacing.sm }} />
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.gray[50] },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  productCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  productInfo: {
-    marginBottom: 12,
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  productPrice: {
-    fontSize: 16,
-    color: '#059669',
-    marginTop: 4,
-  },
-  productMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stockText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  deleteButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  price: { fontSize: 16, fontWeight: '700', color: colors.primary[700] },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.sm },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.sm, backgroundColor: colors.dangerBg },
+  deleteText: { color: colors.danger, fontSize: 13, fontWeight: '600' },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  row2: { flexDirection: 'row', gap: spacing.sm },
+  unitChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
+  unitChip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray[200] },
+  unitChipActive: { backgroundColor: colors.primary[600], borderColor: colors.primary[600] },
+  unitChipText: { fontSize: 12, color: colors.gray[600] },
+  unitChipTextActive: { color: colors.white },
 });

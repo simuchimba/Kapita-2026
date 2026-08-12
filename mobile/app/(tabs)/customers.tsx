@@ -24,8 +24,8 @@ export default function CustomersScreen() {
   };
 
   const handleAddCustomer = async () => {
-    if (!newCustomer.name) {
-      Alert.alert('Error', 'Please enter customer name');
+    if (!newCustomer.name || !newCustomer.phone) {
+      Alert.alert('Error', 'Please enter customer name and phone number');
       return;
     }
 
@@ -94,7 +94,7 @@ export default function CustomersScreen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="Phone (Optional)"
+              placeholder="Phone Number *"
               value={newCustomer.phone}
               onChangeText={(text) => setNewCustomer({ ...newCustomer, phone: text })}
               keyboardType="phone-pad"
