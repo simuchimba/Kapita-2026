@@ -142,11 +142,11 @@ export default function ExpensesScreen() {
           <View style={styles.summaryContainer}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total</Text>
-              <Text style={styles.summaryValue}>${summary.total || '0.00'}</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_expenses || 0).toLocaleString()}</Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>This Month</Text>
-              <Text style={styles.summaryValue}>${summary.this_month || '0.00'}</Text>
+              <Text style={styles.summaryLabel}>Transactions</Text>
+              <Text style={styles.summaryValue}>{summary.expense_count || 0}</Text>
             </View>
           </View>
         )}
@@ -169,7 +169,7 @@ export default function ExpensesScreen() {
                 )}
               </View>
               <View style={styles.expenseMeta}>
-                <Text style={styles.expenseAmount}>${expense.amount}</Text>
+                <Text style={styles.expenseAmount}>K{Number(expense.amount).toLocaleString()}</Text>
                 <View style={styles.expenseActions}>
                   <TouchableOpacity
                     style={styles.editButton}

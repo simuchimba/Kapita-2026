@@ -13,7 +13,7 @@ export default function ReportsScreen() {
 
   const loadReports = async () => {
     try {
-      const data = await analyticsAPI.getReports({ period: selectedPeriod });
+      const data = await analyticsAPI.getReports({ type: selectedPeriod });
       setReports(data);
     } catch (error) {
       console.error('Failed to load reports:', error);
@@ -79,11 +79,11 @@ export default function ReportsScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Sales</Text>
-            <Text style={styles.summaryValue}>${reports?.total_sales || '0.00'}</Text>
+            <Text style={styles.summaryValue}>K{Number(reports?.sales?.total_sales || 0).toLocaleString()}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Expenses</Text>
-            <Text style={styles.summaryValue}>${reports?.total_expenses || '0.00'}</Text>
+            <Text style={styles.summaryValue}>K{Number(reports?.expenses?.total_expenses || 0).toLocaleString()}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Net Profit</Text>
@@ -91,12 +91,12 @@ export default function ReportsScreen() {
               styles.summaryValue,
               (parseFloat(reports?.net_profit || 0) >= 0) ? styles.profit : styles.loss
             ]}>
-              ${reports?.net_profit || '0.00'}
+              K{Number(reports?.net_profit || 0).toLocaleString()}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Transactions</Text>
-            <Text style={styles.summaryValue}>{reports?.total_transactions || '0'}</Text>
+            <Text style={styles.summaryValue}>{reports?.sales?.transaction_count || 0}</Text>
           </View>
         </View>
       </View>

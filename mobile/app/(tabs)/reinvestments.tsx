@@ -85,11 +85,11 @@ export default function ReinvestmentsScreen() {
           <View style={styles.summaryContainer}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total Invested</Text>
-              <Text style={styles.summaryValue}>${summary.total_invested || '0.00'}</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_reinvested || 0).toLocaleString()}</Text>
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Projected Profit</Text>
-              <Text style={styles.summaryValue}>${summary.projected_profit || '0.00'}</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_projected_profit || 0).toLocaleString()}</Text>
             </View>
           </View>
         )}
@@ -108,15 +108,15 @@ export default function ReinvestmentsScreen() {
                 <Text style={styles.reinvestmentDate}>
                   {new Date(reinvestment.date).toLocaleDateString()}
                 </Text>
-                <Text style={styles.reinvestmentAmount}>${reinvestment.amount}</Text>
+                <Text style={styles.reinvestmentAmount}>K{Number(reinvestment.amount).toLocaleString()}</Text>
                 <Text style={styles.reinvestmentMargin}>
                   Expected Margin: {reinvestment.expected_margin}%
                 </Text>
                 <Text style={styles.reinvestmentProfit}>
-                  Projected Profit: ${reinvestment.projected_profit}
+                  Projected Profit: K{Number(reinvestment.projected_profit).toLocaleString()}
                 </Text>
                 <Text style={styles.reinvestmentReturn}>
-                  Projected Return: ${reinvestment.projected_return}
+                  Projected Return: K{Number(reinvestment.projected_return).toLocaleString()}
                 </Text>
               </View>
             </View>

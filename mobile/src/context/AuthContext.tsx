@@ -4,6 +4,9 @@ import { authAPI, getToken, clearTokens } from '../services/api';
 interface User {
   id: number;
   email: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
   business_name: string;
   phone?: string;
   address?: string;

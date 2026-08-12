@@ -113,7 +113,7 @@ export default function PromotionsScreen() {
                   <Text style={styles.promotionDiscount}>
                     {promotion.discount_type === 'percentage' 
                       ? `${promotion.discount_value}% OFF` 
-                      : `$${promotion.discount_value} OFF`}
+                      : `K${promotion.discount_value} OFF`}
                   </Text>
                   <Text style={styles.promotionDates}>
                     {promotion.start_date} - {promotion.end_date}

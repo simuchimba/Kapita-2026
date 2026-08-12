@@ -96,15 +96,15 @@ export default function CreditsScreen() {
           <View style={styles.summaryContainer}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total Owed</Text>
-              <Text style={styles.summaryValue}>${summary.total_owed || '0.00'}</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_owed || 0).toLocaleString()}</Text>
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total Paid</Text>
-              <Text style={styles.summaryValue}>${summary.total_paid || '0.00'}</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_paid || 0).toLocaleString()}</Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Remaining</Text>
-              <Text style={styles.summaryValue}>${summary.remaining || '0.00'}</Text>
+              <Text style={styles.summaryLabel}>Outstanding</Text>
+              <Text style={styles.summaryValue}>K{Number(summary.total_outstanding || 0).toLocaleString()}</Text>
             </View>
           </View>
         )}
@@ -120,10 +120,10 @@ export default function CreditsScreen() {
                 <Text style={styles.creditCustomer}>
                   {credit.customer_details?.name || 'N/A'}
                 </Text>
-                <Text style={styles.creditAmount}>Owed: ${credit.amount_owed}</Text>
-                <Text style={styles.creditPaid}>Paid: ${credit.amount_paid}</Text>
+                <Text style={styles.creditAmount}>Owed: K{Number(credit.amount_owed).toLocaleString()}</Text>
+                <Text style={styles.creditPaid}>Paid: K{Number(credit.amount_paid).toLocaleString()}</Text>
                 <Text style={styles.creditRemaining}>
-                  Remaining: ${(parseFloat(credit.amount_owed) - parseFloat(credit.amount_paid)).toFixed(2)}
+                  Remaining: K{(parseFloat(credit.amount_owed) - parseFloat(credit.amount_paid)).toLocaleString()}
                 </Text>
               </View>
               <TouchableOpacity

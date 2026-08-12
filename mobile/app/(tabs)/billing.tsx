@@ -83,7 +83,7 @@ export default function BillingScreen() {
           paymentHistory.map((payment) => (
             <View key={payment.id} style={styles.paymentCard}>
               <View style={styles.paymentInfo}>
-                <Text style={styles.paymentAmount}>${payment.amount}</Text>
+                <Text style={styles.paymentAmount}>K{Number(payment.amount).toLocaleString()}</Text>
                 <Text style={styles.paymentDate}>
                   {new Date(payment.payment_date).toLocaleDateString()}
                 </Text>
