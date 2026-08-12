@@ -1,18 +1,24 @@
 import React from 'react';
-import { View, ViewProps, StyleSheet } from 'react-native';
-import { colors, radius, shadow, spacing } from '../../constants/theme';
+import { View, ViewProps } from 'react-native';
+import { radius, shadow, spacing } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function Card({ style, ...props }: ViewProps) {
-  return <View style={[styles.card, style]} {...props} />;
+  const { colors } = useAppTheme();
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: colors.card,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing.md,
+          ...shadow.card,
+        },
+        style,
+      ]}
+      {...props}
+    />
+  );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    padding: spacing.md,
-    ...shadow.card,
-  },
-});

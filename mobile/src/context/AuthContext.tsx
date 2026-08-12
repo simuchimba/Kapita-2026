@@ -10,6 +10,8 @@ interface User {
   business_name: string;
   phone?: string;
   address?: string;
+  currency?: string;
+  logo?: string;
   is_staff?: boolean;
   is_superuser?: boolean;
 }

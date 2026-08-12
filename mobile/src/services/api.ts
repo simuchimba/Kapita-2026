@@ -159,7 +159,8 @@ export const authAPI = {
   },
 
   updateProfile: async (data: any) => {
-    const response = await api.put('/auth/profile/', data);
+    const isFormData = data instanceof FormData;
+    const response = await api.put('/auth/profile/', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
     return response.data;
   },
 };

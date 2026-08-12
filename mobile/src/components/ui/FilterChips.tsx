@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { colors, radius, spacing } from '../../constants/theme';
+import { ScrollView, TouchableOpacity, Text } from 'react-native';
+import { radius, spacing } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 interface Option { label: string; value: string }
 
@@ -13,35 +14,28 @@ export default function FilterChips({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { colors } = useAppTheme();
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingVertical: 2 }}>
       {options.map((opt) => {
         const active = opt.value === value;
         return (
           <TouchableOpacity
             key={opt.value || 'all'}
             onPress={() => onChange(opt.value)}
-            style={[styles.chip, active && styles.chipActive]}
+            style={{
+              paddingHorizontal: spacing.sm,
+              paddingVertical: 7,
+              borderRadius: radius.full,
+              backgroundColor: active ? colors.primary[600] : colors.card,
+              borderWidth: 1,
+              borderColor: active ? colors.primary[600] : colors.border,
+            }}
           >
-            <Text style={[styles.label, active && styles.labelActive]}>{opt.label}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '500', color: active ? colors.white : colors.gray[600] }}>{opt.label}</Text>
           </TouchableOpacity>
         );
       })}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { gap: spacing.xs, paddingVertical: 2 },
-  chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-  },
-  chipActive: { backgroundColor: colors.primary[600], borderColor: colors.primary[600] },
-  label: { fontSize: 13, fontWeight: '500', color: colors.gray[600] },
-  labelActive: { color: colors.white },
-});

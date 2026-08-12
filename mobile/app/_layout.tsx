@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '../src/context/AuthContext';
 import { NetworkProvider } from '../src/context/NetworkContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { OfflineIndicator } from '../src/components/OfflineIndicator';
 import { useEffect, useState, useCallback } from 'react';
 import { View } from 'react-native';
@@ -52,18 +53,20 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <AuthProvider>
-        <NetworkProvider>
-          <OfflineIndicator />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-            <Stack.Screen name="admin/login" options={{ headerShown: false }} />
-          </Stack>
-        </NetworkProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NetworkProvider>
+            <OfflineIndicator />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+              <Stack.Screen name="admin/login" options={{ headerShown: false }} />
+            </Stack>
+          </NetworkProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

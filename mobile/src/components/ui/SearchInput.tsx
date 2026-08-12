@@ -1,31 +1,29 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import { View, TextInput, TextInputProps } from 'react-native';
 import { Search } from 'lucide-react-native';
-import { colors, radius, spacing } from '../../constants/theme';
+import { radius, spacing } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function SearchInput(props: TextInputProps) {
+  const { colors } = useAppTheme();
   return (
-    <View style={styles.wrap}>
-      <Search size={16} color={colors.gray[400]} style={styles.icon} />
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: radius.sm,
+        paddingHorizontal: spacing.sm,
+      }}
+    >
+      <Search size={16} color={colors.gray[400]} style={{ marginRight: spacing.xs }} />
       <TextInput
         placeholderTextColor={colors.gray[400]}
-        style={styles.input}
+        style={{ flex: 1, paddingVertical: 10, fontSize: 14, color: colors.text }}
         {...props}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  icon: { marginRight: spacing.xs },
-  input: { flex: 1, paddingVertical: 10, fontSize: 14, color: colors.gray[900] },
-});
