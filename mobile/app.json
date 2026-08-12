@@ -16,6 +16,12 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f69222ac-9b04-46c8-ac56-05a36ed3d248"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kapita.app"
