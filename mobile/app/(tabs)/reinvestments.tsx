@@ -137,12 +137,19 @@ export default function ReinvestmentsScreen() {
               keyboardType="decimal-pad"
             />
             <Text style={styles.label}>Purpose</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Purpose"
-              value={formData.purpose}
-              onChangeText={(text) => setFormData({ ...formData, purpose: text })}
-            />
+            <View style={styles.purposeChips}>
+              {purposes.map((opt: any) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.purposeChip, formData.purpose === opt.value && styles.purposeChipActive]}
+                  onPress={() => setFormData({ ...formData, purpose: opt.value })}
+                >
+                  <Text style={[styles.purposeChipText, formData.purpose === opt.value && styles.purposeChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <Text style={styles.label}>Date</Text>
             <TextInput
               style={styles.input}
@@ -340,6 +347,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+  },
+  purposeChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  purposeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  purposeChipActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  purposeChipText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  purposeChipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',

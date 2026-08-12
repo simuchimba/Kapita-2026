@@ -41,7 +41,10 @@ export default function CreditsScreen() {
     }
 
     try {
-      await creditsAPI.create(newCredit);
+      await creditsAPI.create({
+        ...newCredit,
+        borrow_date: new Date().toISOString().slice(0, 10),
+      });
       setNewCredit({ customer: '', amount_owed: '', due_date: '', notes: '' });
       setShowAddModal(false);
       loadData();
@@ -142,12 +145,22 @@ export default function CreditsScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add New Credit</Text>
             <Text style={styles.label}>Customer</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Select customer"
-              value={newCredit.customer}
-              onChangeText={(text) => setNewCredit({ ...newCredit, customer: text })}
-            />
+            <ScrollView style={styles.customerPicker} nestedScrollEnabled>
+              {customers.length === 0 && (
+                <Text style={styles.emptyText}>No customers yet — add one in the Customers tab first.</Text>
+              )}
+              {customers.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.customerOption, newCredit.customer === String(c.id) && styles.customerOptionActive]}
+                  onPress={() => setNewCredit({ ...newCredit, customer: String(c.id) })}
+                >
+                  <Text style={newCredit.customer === String(c.id) ? styles.customerOptionTextActive : styles.customerOptionText}>
+                    {c.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <Text style={styles.label}>Amount Owed</Text>
             <TextInput
               style={styles.input}
@@ -381,6 +394,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+  },
+  customerPicker: {
+    maxHeight: 140,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  customerOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  customerOptionActive: {
+    backgroundColor: '#f0fdf4',
+  },
+  customerOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  customerOptionTextActive: {
+    fontSize: 14,
+    color: '#047857',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',

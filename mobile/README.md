@@ -4,21 +4,26 @@ React Native/Expo mobile app for Kapita business tracking system.
 
 ## Features
 
-- **Authentication**: JWT-based login and registration
-- **Dashboard**: Real-time business metrics and analytics
-- **Products**: Manage inventory, add and delete products
-- **Sales**: Record sales transactions
-- **Customers**: Manage customer database
-- **Profile**: View user information and logout
+- **Authentication**: JWT-based login/register, with automatic refresh-token rotation
+- **Dashboard, Sales, Products, Customers, Credits, Expenses, Reinvestments,
+  Suppliers, Purchase Orders, Quotations, Promotions, Analytics, Reports,
+  Billing, Settings, Profile**: business-domain CRUD screens
+- **Admin panel** (drawer navigation, staff-only): Overview, Users, Payments
+  (approve/reject with proof-image preview), Subscriptions (extend/revoke/
+  history), cross-tenant Purchase Orders/Suppliers, Feedback review, Activity log
+- **Feedback bar**: an expandable widget on the main tab screens for test
+  users to submit bug reports/feature requests, reviewed in the admin panel
 
 ## Tech Stack
 
-- React Native with Expo
-- Expo Router for navigation
+- React Native with Expo (SDK 52)
+- Expo Router for navigation, `@react-navigation/drawer` for the admin panel
 - TypeScript
 - Axios for API calls
-- AsyncStorage for token management
+- `expo-secure-store` for token storage (not AsyncStorage)
 - Context API for state management
+- `src/constants/theme.ts` — brand colors/spacing ported directly from the
+  web app's `tailwind.config.js`, plus shared UI primitives in `src/components/ui/`
 
 ## Prerequisites
 
@@ -119,9 +124,13 @@ The mobile app connects to the existing Django backend using the same API endpoi
 ## Authentication Flow
 
 1. User logs in via `/api/auth/login/`
-2. JWT access and refresh tokens are stored in AsyncStorage
+2. JWT access and refresh tokens are stored securely via `expo-secure-store`
 3. Access token is included in all API requests
-4. Token is automatically refreshed when expired
+4. On a 401, the refresh token is exchanged for a new access token — **and**
+   a new refresh token, since the backend rotates and blacklists refresh
+   tokens on every use (`ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION`
+   in Django settings). Discarding the new refresh token here would cause
+   every session to fail on its *second* token refresh.
 5. User is logged out if refresh fails
 
 ## Development Notes
@@ -143,16 +152,30 @@ To test the mobile app:
 
 ## Building for Production
 
+Build profiles are defined in `eas.json` (`development`, `preview`, `production`).
+`preview` and `production` both point `EXPO_PUBLIC_API_URL` at the deployed
+backend (`https://kapita-api-fbpp.onrender.com/api`) — no `.env` needed for
+EAS builds.
+
+Requires an Expo account logged in locally (`eas login`) and an EAS project
+linked (`eas init`) before the first build.
+
+### Android APK (for internal testing / sideloading)
+
+```bash
+eas build --platform android --profile preview
+```
+
+### Android App Bundle (for Play Store)
+
+```bash
+eas build --platform android --profile production
+```
+
 ### iOS
 
 ```bash
-eas build --platform ios
-```
-
-### Android
-
-```bash
-eas build --platform android
+eas build --platform ios --profile production
 ```
 
 ## Troubleshooting

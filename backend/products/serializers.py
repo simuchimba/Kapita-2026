@@ -14,7 +14,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'category', 'sku', 'buying_price',
-            'selling_price', 'quantity', 'minimum_stock', 'supplier', 'barcode',
+            'selling_price', 'quantity', 'unit', 'minimum_stock', 'supplier', 'barcode',
             'barcode_url', 'description', 'is_low_stock', 'inventory_value',
             'potential_profit', 'profit_margin', 'created_at', 'updated_at'
         ]

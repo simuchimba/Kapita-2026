@@ -1,7 +1,5 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { useEffect } from 'react';
-import { useRouter } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FeedbackBar from '../../src/components/FeedbackBar';
@@ -15,13 +13,6 @@ function TabIcon({ name, color, size }: { name: IoniconsName; color: string; siz
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/(auth)/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -29,6 +20,10 @@ export default function TabsLayout() {
         <ActivityIndicator size="large" color={colors.primary[600]} />
       </View>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return (

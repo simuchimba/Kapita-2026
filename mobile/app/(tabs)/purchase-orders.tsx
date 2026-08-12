@@ -2,19 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { purchaseOrdersAPI, suppliersAPI, productsAPI } from '../../src/services/api';
 
+interface Supplier { id: number; name: string; }
+interface Product { id: number; name: string; buying_price: string | number; unit: string; }
+
 export default function PurchaseOrdersScreen() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    supplier: '',
-    product: '',
-    quantity: '',
-    expected_delivery_date: '',
-    notes: '',
-  });
+  const [saving, setSaving] = useState(false);
+
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState('');
+  const [unitPrice, setUnitPrice] = useState('');
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     loadData();
@@ -27,9 +31,9 @@ export default function PurchaseOrdersScreen() {
         suppliersAPI.list(),
         productsAPI.list(),
       ]);
-      setOrders(ordersRes.results || ordersRes);
-      setSuppliers(suppliersRes.results || suppliersRes);
-      setProducts(productsRes.results || productsRes);
+      setOrders(ordersRes || []);
+      setSuppliers(suppliersRes || []);
+      setProducts(productsRes || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -37,33 +41,46 @@ export default function PurchaseOrdersScreen() {
     }
   };
 
+  const resetForm = () => {
+    setSupplier(null);
+    setProduct(null);
+    setQuantity('');
+    setUnitPrice('');
+    setExpectedDeliveryDate('');
+    setNotes('');
+  };
+
   const handleSubmit = async () => {
-    if (!formData.supplier || !formData.product || !formData.quantity) {
-      Alert.alert('Error', 'Please fill in required fields');
+    const qty = parseInt(quantity, 10);
+    const price = parseFloat(unitPrice);
+    if (!supplier || !product || !qty || qty < 1 || !price) {
+      Alert.alert('Error', 'Please select a supplier, product, quantity, and unit price');
       return;
     }
 
+    setSaving(true);
     try {
-      await purchaseOrdersAPI.create(formData);
-      setFormData({
-        supplier: '',
-        product: '',
-        quantity: '',
-        expected_delivery_date: '',
-        notes: '',
+      await purchaseOrdersAPI.create({
+        supplier: supplier.id,
+        expected_delivery_date: expectedDeliveryDate || null,
+        notes,
+        items: [{ product: product.id, quantity: qty, unit_price: price }],
       });
+      resetForm();
       setShowAddModal(false);
       loadData();
       Alert.alert('Success', 'Purchase order created successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create purchase order');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to create purchase order');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleReceive = async (id: number) => {
     Alert.alert(
       'Receive Order',
-      'Mark this order as received?',
+      'Mark this order as received? This will add the ordered quantity to your stock.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -95,9 +112,9 @@ export default function PurchaseOrdersScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Purchase Orders</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
+            onPress={() => { resetForm(); setShowAddModal(true); }}
           >
             <Text style={styles.addButtonText}>+ New Order</Text>
           </TouchableOpacity>
@@ -114,10 +131,12 @@ export default function PurchaseOrdersScreen() {
                 <Text style={styles.orderSupplier}>
                   {order.supplier_details?.name || 'N/A'}
                 </Text>
-                <Text style={styles.orderProduct}>
-                  {order.product_details?.name || 'N/A'}
-                </Text>
-                <Text style={styles.orderQuantity}>Qty: {order.quantity}</Text>
+                {(order.items || []).map((item: any) => (
+                  <Text key={item.id} style={styles.orderProduct}>
+                    {item.product_details?.name || 'Product'} × {item.quantity} {item.product_details?.unit || 'pcs'}
+                  </Text>
+                ))}
+                <Text style={styles.orderQuantity}>Total: K{Number(order.total_amount).toLocaleString()}</Text>
                 <Text style={styles.orderDate}>
                   Expected: {order.expected_delivery_date || 'TBD'}
                 </Text>
@@ -143,43 +162,66 @@ export default function PurchaseOrdersScreen() {
 
       {showAddModal && (
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <ScrollView style={styles.modalContent}>
             <Text style={styles.modalTitle}>New Purchase Order</Text>
+
             <Text style={styles.label}>Supplier</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Select supplier"
-              value={formData.supplier}
-              onChangeText={(text) => setFormData({ ...formData, supplier: text })}
-            />
+            <ScrollView style={styles.pickerList} nestedScrollEnabled>
+              {suppliers.length === 0 && <Text style={styles.emptyText}>No suppliers yet — add one in the Suppliers tab first.</Text>}
+              {suppliers.map((s) => (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.pickerRow, supplier?.id === s.id && styles.pickerRowActive]}
+                  onPress={() => setSupplier(s)}
+                >
+                  <Text style={supplier?.id === s.id ? styles.pickerRowTextActive : styles.pickerRowText}>{s.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Text style={styles.label}>Product</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Select product"
-              value={formData.product}
-              onChangeText={(text) => setFormData({ ...formData, product: text })}
-            />
+            <ScrollView style={styles.pickerList} nestedScrollEnabled>
+              {products.length === 0 && <Text style={styles.emptyText}>No products yet — add one in the Products tab first.</Text>}
+              {products.map((p) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.pickerRow, product?.id === p.id && styles.pickerRowActive]}
+                  onPress={() => { setProduct(p); setUnitPrice(String(p.buying_price)); }}
+                >
+                  <Text style={product?.id === p.id ? styles.pickerRowTextActive : styles.pickerRowText}>{p.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Text style={styles.label}>Quantity</Text>
             <TextInput
               style={styles.input}
               placeholder="Quantity"
-              value={formData.quantity}
-              onChangeText={(text) => setFormData({ ...formData, quantity: text })}
+              value={quantity}
+              onChangeText={setQuantity}
               keyboardType="number-pad"
             />
-            <Text style={styles.label}>Expected Delivery Date</Text>
+            <Text style={styles.label}>Unit cost (K)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              value={unitPrice}
+              onChangeText={setUnitPrice}
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.label}>Expected Delivery Date (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder="YYYY-MM-DD"
-              value={formData.expected_delivery_date}
-              onChangeText={(text) => setFormData({ ...formData, expected_delivery_date: text })}
+              value={expectedDeliveryDate}
+              onChangeText={setExpectedDeliveryDate}
             />
             <Text style={styles.label}>Notes (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder="Notes"
-              value={formData.notes}
-              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              value={notes}
+              onChangeText={setNotes}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -191,11 +233,12 @@ export default function PurchaseOrdersScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSubmit}
+                disabled={saving}
               >
-                <Text style={styles.modalButtonText}>Create</Text>
+                <Text style={styles.modalButtonText}>{saving ? 'Creating…' : 'Create'}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
       )}
     </View>
@@ -244,7 +287,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#999',
   },
   orderCard: {
@@ -325,8 +368,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    width: '80%',
-    maxWidth: 400,
+    width: '85%',
+    maxWidth: 420,
+    maxHeight: '85%',
   },
   modalTitle: {
     fontSize: 20,
@@ -345,6 +389,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+  },
+  pickerList: {
+    maxHeight: 120,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  pickerRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  pickerRowActive: {
+    backgroundColor: '#f0fdf4',
+  },
+  pickerRowText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  pickerRowTextActive: {
+    fontSize: 14,
+    color: '#047857',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',
