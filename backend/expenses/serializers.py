@@ -9,7 +9,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         model = Expense
         fields = [
             'id', 'title', 'amount', 'category', 'date',
-            'notes', 'created_at', 'updated_at'
+            'notes', 'source', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

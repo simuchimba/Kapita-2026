@@ -24,7 +24,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kapita.app"
+      "bundleIdentifier": "com.kapita.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Kapita uses your microphone for Tell Kapita, so you can record a sale or expense by speaking instead of typing."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -38,7 +41,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Kapita uses your microphone for Tell Kapita, so you can record a sale or expense by speaking instead of typing."
+        }
+      ]
     ],
     "extra": {
       "router": {

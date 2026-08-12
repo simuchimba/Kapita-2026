@@ -43,7 +43,7 @@ class SaleSerializer(serializers.ModelSerializer):
             'id', 'product', 'product_details', 'customer', 'customer_details',
             'quantity', 'unit_price', 'currency', 'discount_type', 'discount_value', 
             'discount_amount', 'promotion_name', 'total_amount', 'payment_type',
-            'deposit_amount', 'remaining_balance', 'due_date', 'notes',
+            'deposit_amount', 'remaining_balance', 'due_date', 'notes', 'source',
             'cost_of_goods', 'profit', 'profit_margin',
             'created_at', 'updated_at'
         ]

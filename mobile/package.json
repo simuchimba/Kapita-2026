@@ -19,6 +19,7 @@
     "axios": "^1.7.9",
     "expo": "~52.0.0",
     "expo-asset": "11.0.5",
+    "expo-av": "~15.0.2",
     "expo-constants": "~17.0.8",
     "expo-document-picker": "~13.0.3",
     "expo-file-system": "~18.0.12",
@@ -52,7 +53,10 @@
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": ["react-native-chart-kit"],
+        "exclude": [
+          "react-native-chart-kit",
+          "expo-av"
+        ],
         "listUnknownPackages": false
       }
     }

@@ -643,6 +643,28 @@ export const chatAPI = {
     const response = await api.post('/chat/', { message, messages });
     return response.data;
   },
+
+  speechToText: async (audioUri: string) => {
+    const formData = new FormData();
+    formData.append('audio', { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' } as any);
+    const response = await api.post('/chat/stt/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
+
+// Voice Entry API
+export const voiceAPI = {
+  parse: async (transcript: string) => {
+    const response = await api.post('/voice/parse/', { transcript });
+    return response.data;
+  },
+
+  resolveProduct: async (params: { product_id: number; quantity: number; payment_method?: string | null; customer_name?: string | null }) => {
+    const response = await api.post('/voice/parse/', params);
+    return response.data;
+  },
 };
 
 // Notifications API

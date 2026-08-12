@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'invoices',
     'backup',
     'feedback',
+    'voice',
 ]
 
 MIDDLEWARE = [
