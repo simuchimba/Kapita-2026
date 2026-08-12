@@ -1,117 +1,106 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter } from 'expo-router';
+import { Mail, MapPin, Phone } from 'lucide-react-native';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/login');
-          },
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
         },
-      ]
-    );
+      },
+    ]);
   };
+
+  const initial = (user?.business_name || user?.first_name || user?.username || '?').charAt(0).toUpperCase();
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initial}</Text>
+        </View>
+        <Text style={styles.name}>{user?.business_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.label}>Business Name</Text>
-          <Text style={styles.value}>{user?.business_name || 'N/A'}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{user?.email || 'N/A'}</Text>
-        </View>
-
-        {user?.phone && (
-          <View style={styles.card}>
-            <Text style={styles.label}>Phone</Text>
-            <Text style={styles.value}>{user.phone}</Text>
+        <Card>
+          <View style={styles.row}>
+            <Mail size={16} color={colors.gray[400]} />
+            <View style={{ flex: 1 }}>
+              <Text style={typography.caption}>Email</Text>
+              <Text style={styles.value}>{user?.email || 'N/A'}</Text>
+            </View>
           </View>
-        )}
+          {user?.phone ? (
+            <View style={styles.row}>
+              <Phone size={16} color={colors.gray[400]} />
+              <View style={{ flex: 1 }}>
+                <Text style={typography.caption}>Phone</Text>
+                <Text style={styles.value}>{user.phone}</Text>
+              </View>
+            </View>
+          ) : null}
+          {user?.address ? (
+            <View style={styles.row}>
+              <MapPin size={16} color={colors.gray[400]} />
+              <View style={{ flex: 1 }}>
+                <Text style={typography.caption}>Address</Text>
+                <Text style={styles.value}>{user.address}</Text>
+              </View>
+            </View>
+          ) : null}
+        </Card>
 
-        {user?.address && (
-          <View style={styles.card}>
-            <Text style={styles.label}>Address</Text>
-            <Text style={styles.value}>{user.address}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <Button title="Logout" variant="danger" onPress={handleLogout} style={{ marginTop: spacing.md }} />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
+  container: { flex: 1, backgroundColor: colors.gray[50] },
   header: {
-    padding: 24,
-    backgroundColor: '#059669',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  content: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  logoutButton: {
-    backgroundColor: '#dc2626',
-    borderRadius: 12,
-    padding: 16,
     alignItems: 'center',
-    marginTop: 16,
+    padding: spacing.xl,
+    backgroundColor: colors.primary[600],
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
   },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
+  avatarText: { fontSize: 28, fontWeight: '700', color: colors.white },
+  name: { fontSize: 18, fontWeight: '700', color: colors.white },
+  email: { fontSize: 13, color: colors.primary[100], marginTop: 2 },
+  content: { padding: spacing.md },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
+  },
+  value: { fontSize: 15, fontWeight: '600', color: colors.gray[900], marginTop: 2 },
 });

@@ -88,12 +88,23 @@ export default function TabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: 'More',
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon name="ellipsis-horizontal-circle-outline" color={color} size={size} />
+            ),
+          }}
+        />
 
-        {/* Hidden tabs — navigable but not shown in bottom bar */}
+        {/* Reachable via the More tab, not shown in the bottom bar */}
         {[
           'credits', 'expenses', 'reinvestments', 'settings',
           'suppliers', 'purchase-orders', 'quotations',
           'promotions', 'billing', 'reports', 'profile',
+          'invoices', 'chat', 'personal-finance', 'outgoing-payments',
+          'currencies', 'cash-flow', 'projections', 'backup',
         ].map((name) => (
           <Tabs.Screen key={name} name={name} options={{ href: null }} />
         ))}

@@ -1,393 +1,204 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { promotionsAPI, productsAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import Badge from '../../src/components/ui/Badge';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
+
+interface Product { id: number; name: string; }
+interface Promotion {
+  id: number;
+  name: string;
+  description?: string;
+  discount_type: string;
+  discount_value: string | number;
+  start_date: string;
+  end_date: string;
+  status: string;
+  is_currently_active: boolean;
+}
+
+const EMPTY_FORM = {
+  name: '', description: '', discount_type: 'percentage', discount_value: '',
+  start_date: new Date().toISOString().slice(0, 10), end_date: '', applicable_products: '',
+};
 
 export default function PromotionsScreen() {
-  const [promotions, setPromotions] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    discount_type: 'percentage',
-    discount_value: '',
-    start_date: '',
-    end_date: '',
-    applicable_products: '',
-  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const [promotionsRes, productsRes] = await Promise.all([
+      const [promotionsData, productsData] = await Promise.all([
         promotionsAPI.list(),
         productsAPI.list(),
       ]);
-      setPromotions(promotionsRes.results || promotionsRes);
-      setProducts(productsRes.results || productsRes);
+      setPromotions(promotionsData || []);
+      setProducts(productsData || []);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load promotions:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAdd = () => {
+    setForm(EMPTY_FORM);
+    setShowModal(true);
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.discount_value) {
-      Alert.alert('Error', 'Please fill in required fields');
+    if (!form.name.trim() || !form.discount_value || !form.end_date) {
+      Alert.alert('Missing info', 'Please fill in name, discount value, and end date');
       return;
     }
-
+    setSaving(true);
     try {
-      const { applicable_products, ...rest } = formData;
+      const { applicable_products, ...rest } = form;
       await promotionsAPI.create({
         ...rest,
-        discount_value: parseFloat(formData.discount_value),
-        product_ids: applicable_products ?
-          applicable_products.split(',').map((id: string) => parseInt(id.trim())).filter((n) => !isNaN(n)) : [],
+        discount_value: parseFloat(form.discount_value),
+        product_ids: applicable_products
+          ? applicable_products.split(',').map((id) => parseInt(id.trim(), 10)).filter((n) => !isNaN(n))
+          : [],
       });
-      setFormData({
-        name: '',
-        description: '',
-        discount_type: 'percentage',
-        discount_value: '',
-        start_date: '',
-        end_date: '',
-        applicable_products: '',
-      });
-      setShowAddModal(false);
-      loadData();
-      Alert.alert('Success', 'Promotion created successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create promotion');
+      setShowModal(false);
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to create promotion');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleToggleStatus = async (id: number) => {
+  const handleToggle = async (promotion: Promotion) => {
     try {
-      await promotionsAPI.toggleStatus(id);
-      loadData();
+      await promotionsAPI.toggleStatus(promotion.id);
+      load();
     } catch (error) {
-      Alert.alert('Error', 'Failed to toggle promotion status');
+      Alert.alert('Error', 'Failed to update promotion');
     }
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Promotions</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add Promotion</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.headerBar}>
+        <Text style={typography.title}>Promotions</Text>
+        <Button title="New Promotion" size="sm" onPress={openAdd} />
+      </View>
 
-        {promotions.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No promotions yet</Text>
-          </View>
-        ) : (
-          promotions.map((promotion) => (
-            <View key={promotion.id} style={styles.promotionCard}>
-              <View style={styles.promotionInfo}>
-                <Text style={styles.promotionName}>{promotion.name}</Text>
-                {promotion.description && (
-                  <Text style={styles.promotionDescription}>{promotion.description}</Text>
-                )}
-                <View style={styles.promotionDetails}>
-                  <Text style={styles.promotionDiscount}>
-                    {promotion.discount_type === 'percentage' 
-                      ? `${promotion.discount_value}% OFF` 
-                      : `K${promotion.discount_value} OFF`}
-                  </Text>
-                  <Text style={styles.promotionDates}>
-                    {promotion.start_date} - {promotion.end_date}
-                  </Text>
-                </View>
-                <View style={[
-                  styles.statusBadge,
-                  promotion.is_currently_active ? styles.statusActive : styles.statusInactive
-                ]}>
-                  <Text style={styles.statusText}>
-                    {promotion.is_currently_active ? 'Active' : 'Inactive'}
-                  </Text>
-                </View>
+      <FlatList
+        data={promotions}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No promotions yet." /> : null}
+        renderItem={({ item }) => (
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.name}</Text>
+                {item.description ? <Text style={typography.caption}>{item.description}</Text> : null}
               </View>
-              <TouchableOpacity
-                style={styles.toggleButton}
-                onPress={() => handleToggleStatus(promotion.id)}
-              >
-                <Text style={styles.toggleButtonText}>
-                  {promotion.status === 'active' ? 'Deactivate' : 'Activate'}
-                </Text>
-              </TouchableOpacity>
+              <Badge label={item.is_currently_active ? 'Active' : 'Inactive'} tone={item.is_currently_active ? 'green' : 'gray'} />
             </View>
-          ))
+            <View style={styles.metaRow}>
+              <Text style={styles.discount}>
+                {item.discount_type === 'percentage' ? `${item.discount_value}% OFF` : `K${item.discount_value} OFF`}
+              </Text>
+              <Text style={typography.caption}>{item.start_date} → {item.end_date}</Text>
+            </View>
+            <Button
+              title={item.status === 'active' ? 'Deactivate' : 'Activate'}
+              size="sm"
+              variant="secondary"
+              onPress={() => handleToggle(item)}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Card>
         )}
-      </ScrollView>
+      />
 
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Promotion</Text>
-            <Text style={styles.label}>Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Promotion name"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-            />
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Description"
-              value={formData.description}
-              onChangeText={(text) => setFormData({ ...formData, description: text })}
-              multiline
-            />
-            <Text style={styles.label}>Discount Type</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="percentage or fixed"
-              value={formData.discount_type}
-              onChangeText={(text) => setFormData({ ...formData, discount_type: text })}
-            />
-            <Text style={styles.label}>Discount Value *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Discount value"
-              value={formData.discount_value}
-              onChangeText={(text) => setFormData({ ...formData, discount_value: text })}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.label}>Start Date</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={formData.start_date}
-              onChangeText={(text) => setFormData({ ...formData, start_date: text })}
-            />
-            <Text style={styles.label}>End Date</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={formData.end_date}
-              onChangeText={(text) => setFormData({ ...formData, end_date: text })}
-            />
-            <Text style={styles.label}>Applicable Products (comma-separated IDs)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1, 2, 3"
-              value={formData.applicable_products}
-              onChangeText={(text) => setFormData({ ...formData, applicable_products: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.modalButtonText}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      <Modal visible={showModal} onClose={() => setShowModal(false)} title="New promotion">
+        <Text style={styles.label}>Name *</Text>
+        <TextInput style={styles.input} value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder="e.g. Weekend Special" />
+        <Text style={styles.label}>Description</Text>
+        <TextInput style={styles.input} value={form.description} onChangeText={(v) => setForm({ ...form, description: v })} placeholder="Optional description" />
+
+        <Text style={styles.label}>Discount type</Text>
+        <View style={styles.chips}>
+          {[{ value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed amount' }].map((opt) => (
+            <TouchableOpacity key={opt.value} style={[styles.chip, form.discount_type === opt.value && styles.chipActive]} onPress={() => setForm({ ...form, discount_type: opt.value })}>
+              <Text style={[styles.chipText, form.discount_type === opt.value && styles.chipTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        <Text style={styles.label}>Discount value * {form.discount_type === 'percentage' ? '(%)' : '(K)'}</Text>
+        <TextInput style={styles.input} value={form.discount_value} onChangeText={(v) => setForm({ ...form, discount_value: v })} keyboardType="decimal-pad" placeholder="10" />
+
+        <Text style={styles.label}>Start date</Text>
+        <TextInput style={styles.input} value={form.start_date} onChangeText={(v) => setForm({ ...form, start_date: v })} placeholder="YYYY-MM-DD" />
+        <Text style={styles.label}>End date *</Text>
+        <TextInput style={styles.input} value={form.end_date} onChangeText={(v) => setForm({ ...form, end_date: v })} placeholder="YYYY-MM-DD" />
+
+        <Text style={styles.label}>Products (optional)</Text>
+        <Text style={[typography.caption, { marginBottom: 4 }]}>
+          {products.length > 0 ? `Available IDs: ${products.map((p) => `${p.id}=${p.name}`).join(', ')}` : 'No products yet'}
+        </Text>
+        <TextInput style={styles.input} value={form.applicable_products} onChangeText={(v) => setForm({ ...form, applicable_products: v })} placeholder="e.g. 1,2,3 (leave blank for all)" />
+
+        <Button title="Create promotion" loading={saving} onPress={handleSubmit} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
+  container: { flex: 1, backgroundColor: colors.gray[50] },
+  headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  promotionCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  promotionInfo: {
-    marginBottom: 12,
-  },
-  promotionName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  promotionDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  promotionDetails: {
-    marginTop: 8,
-  },
-  promotionDiscount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  promotionDates: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginTop: 8,
-  },
-  statusActive: {
-    backgroundColor: '#059669',
-  },
-  statusInactive: {
-    backgroundColor: '#6b7280',
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  toggleButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  toggleButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    marginTop: 8,
-  },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  discount: { fontSize: 15, fontWeight: '700', color: colors.primary[700] },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 7, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray[200] },
+  chipActive: { backgroundColor: colors.primary[600], borderColor: colors.primary[600] },
+  chipText: { fontSize: 12, color: colors.gray[600] },
+  chipTextActive: { color: colors.white, fontWeight: '600' },
 });

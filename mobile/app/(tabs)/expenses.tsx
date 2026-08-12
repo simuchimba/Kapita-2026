@@ -1,6 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import { expensesAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
 
 const CATEGORY_OPTIONS = [
   { value: 'rent', label: 'Rent' },
@@ -14,479 +21,212 @@ const CATEGORY_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+interface Expense {
+  id: number;
+  title: string;
+  amount: string | number;
+  category: string;
+  date: string;
+  notes?: string;
+}
+
+const EMPTY_FORM = { title: '', amount: '', category: '', date: new Date().toISOString().slice(0, 10), notes: '' };
+
 export default function ExpensesScreen() {
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    amount: '',
-    category: '',
-    date: new Date().toISOString().split('T')[0],
-    notes: '',
-  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Expense | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const [expensesRes, categoriesRes, summaryRes] = await Promise.all([
+      const [expensesData, summaryData] = await Promise.all([
         expensesAPI.list(),
-        expensesAPI.getCategories(),
         expensesAPI.getSummary(),
       ]);
-      setExpenses(expensesRes.results || expensesRes);
-      setCategories(categoriesRes);
-      setSummary(summaryRes);
+      setExpenses(expensesData || []);
+      setSummary(summaryData);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load expenses:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    if (!formData.title || !formData.amount || !formData.category) {
-      Alert.alert('Error', 'Please fill in required fields');
-      return;
-    }
-
-    try {
-      if (editingExpense) {
-        await expensesAPI.update(editingExpense.id, formData);
-      } else {
-        await expensesAPI.create(formData);
-      }
-      setShowAddModal(false);
-      resetForm();
-      loadData();
-      Alert.alert('Success', 'Expense saved successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save expense');
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    Alert.alert(
-      'Delete Expense',
-      'Are you sure you want to delete this expense?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await expensesAPI.delete(id);
-              loadData();
-              Alert.alert('Success', 'Expense deleted');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete expense');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleEdit = (expense: any) => {
-    setEditingExpense(expense);
-    setFormData({
+  const openEdit = (expense: Expense) => {
+    setEditing(expense);
+    setForm({
       title: expense.title,
-      amount: expense.amount.toString(),
+      amount: String(expense.amount),
       category: expense.category,
       date: expense.date,
       notes: expense.notes || '',
     });
-    setShowAddModal(true);
+    setShowModal(true);
   };
 
-  const resetForm = () => {
-    setEditingExpense(null);
-    setFormData({
-      title: '',
-      amount: '',
-      category: '',
-      date: new Date().toISOString().split('T')[0],
-      notes: '',
-    });
+  const handleSubmit = async () => {
+    if (!form.title.trim() || !form.amount || !form.category) {
+      Alert.alert('Missing info', 'Please fill in title, amount, and category');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editing) {
+        await expensesAPI.update(editing.id, form);
+      } else {
+        await expensesAPI.create(form);
+      }
+      setShowModal(false);
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to save expense');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
+  const handleDelete = (expense: Expense) => {
+    Alert.alert('Delete expense', `Delete "${expense.title}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await expensesAPI.delete(expense.id);
+            load();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete expense');
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Expenses</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add Expense</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.headerBar}>
+        <Text style={typography.title}>Expenses</Text>
+        <Button title="Add Expense" size="sm" onPress={openAdd} />
+      </View>
 
-        {summary && (
-          <View style={styles.summaryContainer}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total</Text>
-              <Text style={styles.summaryValue}>K{Number(summary.total_expenses || 0).toLocaleString()}</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Transactions</Text>
-              <Text style={styles.summaryValue}>{summary.expense_count || 0}</Text>
-            </View>
-          </View>
-        )}
-
-        {expenses.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No expenses yet</Text>
-          </View>
-        ) : (
-          expenses.map((expense) => (
-            <View key={expense.id} style={styles.expenseCard}>
-              <View style={styles.expenseInfo}>
-                <Text style={styles.expenseTitle}>{expense.title}</Text>
-                <Text style={styles.expenseCategory}>
-                  {CATEGORY_OPTIONS.find((c) => c.value === expense.category)?.label || expense.category}
-                </Text>
-                <Text style={styles.expenseDate}>{new Date(expense.date).toLocaleDateString()}</Text>
-                {expense.notes && (
-                  <Text style={styles.expenseNotes}>{expense.notes}</Text>
-                )}
-              </View>
-              <View style={styles.expenseMeta}>
-                <Text style={styles.expenseAmount}>K{Number(expense.amount).toLocaleString()}</Text>
-                <View style={styles.expenseActions}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleEdit(expense)}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(expense.id)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-            </Text>
-            <Text style={styles.label}>Title</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Expense title"
-              value={formData.title}
-              onChangeText={(text) => setFormData({ ...formData, title: text })}
-            />
-            <Text style={styles.label}>Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Amount"
-              value={formData.amount}
-              onChangeText={(text) => setFormData({ ...formData, amount: text })}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.categoryChips}>
-              {CATEGORY_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[styles.categoryChip, formData.category === opt.value && styles.categoryChipActive]}
-                  onPress={() => setFormData({ ...formData, category: opt.value })}
-                >
-                  <Text style={[styles.categoryChipText, formData.category === opt.value && styles.categoryChipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.label}>Date</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={formData.date}
-              onChangeText={(text) => setFormData({ ...formData, date: text })}
-            />
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Notes"
-              value={formData.notes}
-              onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      {summary && (
+        <View style={styles.summaryRow}>
+          <Card style={styles.summaryCard}>
+            <Text style={typography.caption}>Total</Text>
+            <Text style={styles.summaryValue}>K{Number(summary.total_expenses || 0).toLocaleString()}</Text>
+          </Card>
+          <Card style={styles.summaryCard}>
+            <Text style={typography.caption}>Transactions</Text>
+            <Text style={styles.summaryValue}>{summary.expense_count || 0}</Text>
+          </Card>
         </View>
       )}
+
+      <FlatList
+        data={expenses}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.sm, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No expenses yet." /> : null}
+        renderItem={({ item }) => (
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={typography.caption}>
+                  {CATEGORY_OPTIONS.find((c) => c.value === item.category)?.label || item.category} · {new Date(item.date).toLocaleDateString()}
+                </Text>
+              </View>
+              <Text style={styles.amount}>K{Number(item.amount).toLocaleString()}</Text>
+            </View>
+            {item.notes ? <Text style={[typography.caption, { marginTop: spacing.xs }]}>{item.notes}</Text> : null}
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => openEdit(item)}>
+                <Pencil size={14} color={colors.gray[600]} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.dangerBg }]} onPress={() => handleDelete(item)}>
+                <Trash2 size={14} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )}
+      />
+
+      <Modal visible={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit expense' : 'Add expense'}>
+        <Text style={styles.label}>Title *</Text>
+        <TextInput style={styles.input} value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} placeholder="e.g. Transport to market" />
+        <Text style={styles.label}>Amount (K) *</Text>
+        <TextInput style={styles.input} value={form.amount} onChangeText={(v) => setForm({ ...form, amount: v })} keyboardType="decimal-pad" placeholder="0.00" />
+        <Text style={styles.label}>Category *</Text>
+        <View style={styles.chips}>
+          {CATEGORY_OPTIONS.map((opt) => (
+            <TouchableOpacity key={opt.value} style={[styles.chip, form.category === opt.value && styles.chipActive]} onPress={() => setForm({ ...form, category: opt.value })}>
+              <Text style={[styles.chipText, form.category === opt.value && styles.chipTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.label}>Date</Text>
+        <TextInput style={styles.input} value={form.date} onChangeText={(v) => setForm({ ...form, date: v })} placeholder="YYYY-MM-DD" />
+        <Text style={styles.label}>Notes (optional)</Text>
+        <TextInput style={styles.input} value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} placeholder="Notes" />
+        <Button title="Save expense" loading={saving} onPress={handleSubmit} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
+  container: { flex: 1, backgroundColor: colors.gray[50] },
+  headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#dc2626',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  expenseCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  expenseInfo: {
-    marginBottom: 12,
-  },
-  expenseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  expenseCategory: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  expenseDate: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-  expenseNotes: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  expenseMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  expenseAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#dc2626',
-  },
-  expenseActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  editButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  deleteButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    marginTop: 8,
-  },
+  summaryRow: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md, paddingBottom: 0 },
+  summaryCard: { flex: 1, alignItems: 'center' },
+  summaryValue: { fontSize: 16, fontWeight: '700', color: colors.gray[900], marginTop: 4 },
+  title: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  amount: { fontSize: 16, fontWeight: '700', color: colors.danger },
+  actions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
+  iconBtn: { padding: spacing.xs, borderRadius: radius.sm, backgroundColor: colors.gray[100] },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
-  categoryChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  categoryChipActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  categoryChipText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  categoryChipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 7, borderRadius: radius.full, borderWidth: 1, borderColor: colors.gray[200] },
+  chipActive: { backgroundColor: colors.primary[600], borderColor: colors.primary[600] },
+  chipText: { fontSize: 12, color: colors.gray[600] },
+  chipTextActive: { color: colors.white, fontWeight: '600' },
 });
