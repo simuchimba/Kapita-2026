@@ -1,14 +1,22 @@
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '../src/context/AuthContext';
 import { NetworkProvider } from '../src/context/NetworkContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { OfflineIndicator } from '../src/components/OfflineIndicator';
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { colors } from '../src/constants/theme';
+import { useEffect, useState, useCallback } from 'react';
+import { View } from 'react-native';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isDataReady, setIsDataReady] = useState(false);
+  const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+  });
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -25,33 +33,40 @@ export default function RootLayout() {
         // The app will still work online — offline sync is disabled.
         console.warn('[Kapita] Offline storage unavailable (Expo Go):', error);
       } finally {
-        setIsInitialized(true);
+        setIsDataReady(true);
       }
     };
     initializeApp();
   }, []);
 
-  if (!isInitialized) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
-        <ActivityIndicator size="large" color={colors.primary[600]} />
-      </View>
-    );
+  const isReady = isDataReady && (fontsLoaded || !!fontError);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (isReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [isReady]);
+
+  if (!isReady) {
+    return null;
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <NetworkProvider>
-          <OfflineIndicator />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-            <Stack.Screen name="admin/login" options={{ headerShown: false }} />
-          </Stack>
-        </NetworkProvider>
-      </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <ThemeProvider>
+        <AuthProvider>
+          <NetworkProvider>
+            <OfflineIndicator />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+              <Stack.Screen name="admin/login" options={{ headerShown: false }} />
+            </Stack>
+          </NetworkProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

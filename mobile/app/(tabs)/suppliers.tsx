@@ -1,398 +1,186 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import { suppliersAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import SearchInput from '../../src/components/ui/SearchInput';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
+
+interface Supplier {
+  id: number;
+  name: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+const EMPTY_FORM = { name: '', contact_person: '', phone: '', email: '', address: '' };
 
 export default function SuppliersScreen() {
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    contact_person: '',
-    phone: '',
-    email: '',
-    address: '',
-  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Supplier | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    loadSuppliers();
-  }, []);
-
-  const loadSuppliers = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
       const data = await suppliersAPI.list();
-      setSuppliers(data.results || data);
+      setSuppliers(data || []);
     } catch (error) {
       console.error('Failed to load suppliers:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    if (!formData.name) {
-      Alert.alert('Error', 'Please enter supplier name');
-      return;
-    }
-
-    try {
-      if (editingSupplier) {
-        await suppliersAPI.update(editingSupplier.id, formData);
-      } else {
-        await suppliersAPI.create(formData);
-      }
-      setShowAddModal(false);
-      resetForm();
-      loadSuppliers();
-      Alert.alert('Success', 'Supplier saved successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save supplier');
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    Alert.alert(
-      'Delete Supplier',
-      'Are you sure you want to delete this supplier?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await suppliersAPI.delete(id);
-              loadSuppliers();
-              Alert.alert('Success', 'Supplier deleted');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete supplier');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleEdit = (supplier: any) => {
-    setEditingSupplier(supplier);
-    setFormData({
+  const openEdit = (supplier: Supplier) => {
+    setEditing(supplier);
+    setForm({
       name: supplier.name,
       contact_person: supplier.contact_person || '',
       phone: supplier.phone || '',
       email: supplier.email || '',
       address: supplier.address || '',
     });
-    setShowAddModal(true);
+    setShowModal(true);
   };
 
-  const resetForm = () => {
-    setEditingSupplier(null);
-    setFormData({
-      name: '',
-      contact_person: '',
-      phone: '',
-      email: '',
-      address: '',
-    });
+  const handleSubmit = async () => {
+    if (!form.name.trim()) {
+      Alert.alert('Missing info', 'Please enter a supplier name');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editing) {
+        await suppliersAPI.update(editing.id, form);
+      } else {
+        await suppliersAPI.create(form);
+      }
+      setShowModal(false);
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to save supplier');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
+  const handleDelete = (supplier: Supplier) => {
+    Alert.alert('Delete supplier', `Delete "${supplier.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await suppliersAPI.delete(supplier.id);
+            load();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete supplier');
+          }
+        },
+      },
+    ]);
+  };
+
+  const filtered = suppliers.filter((s) => !search.trim() || s.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Suppliers</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add Supplier</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.header}>
+        <SearchInput placeholder="Search suppliers" value={search} onChangeText={setSearch} />
+        <Button title="Add Supplier" size="sm" onPress={openAdd} />
+      </View>
 
-        {suppliers.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No suppliers yet</Text>
-          </View>
-        ) : (
-          suppliers.map((supplier) => (
-            <View key={supplier.id} style={styles.supplierCard}>
-              <View style={styles.supplierInfo}>
-                <Text style={styles.supplierName}>{supplier.name}</Text>
-                {supplier.contact_person && (
-                  <Text style={styles.supplierContact}>{supplier.contact_person}</Text>
-                )}
-                {supplier.phone && (
-                  <Text style={styles.supplierPhone}>{supplier.phone}</Text>
-                )}
-                {supplier.email && (
-                  <Text style={styles.supplierEmail}>{supplier.email}</Text>
-                )}
-                {supplier.address && (
-                  <Text style={styles.supplierAddress}>{supplier.address}</Text>
-                )}
-              </View>
-              <View style={styles.supplierActions}>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => handleEdit(supplier)}
-                >
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDelete(supplier.id)}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No suppliers yet." /> : null}
+        renderItem={({ item }) => (
+          <Card>
+            <Text style={styles.name}>{item.name}</Text>
+            {item.contact_person ? <Text style={typography.caption}>{item.contact_person}</Text> : null}
+            {item.phone ? <Text style={typography.caption}>{item.phone}</Text> : null}
+            {item.email ? <Text style={typography.caption}>{item.email}</Text> : null}
+            {item.address ? <Text style={typography.caption}>{item.address}</Text> : null}
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => openEdit(item)}>
+                <Pencil size={14} color={colors.gray[600]} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.dangerBg }]} onPress={() => handleDelete(item)}>
+                <Trash2 size={14} color={colors.danger} />
+              </TouchableOpacity>
             </View>
-          ))
+          </Card>
         )}
-      </ScrollView>
+      />
 
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingSupplier ? 'Edit Supplier' : 'Add New Supplier'}
-            </Text>
-            <Text style={styles.label}>Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Supplier name"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-            />
-            <Text style={styles.label}>Contact Person</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Contact person"
-              value={formData.contact_person}
-              onChangeText={(text) => setFormData({ ...formData, contact_person: text })}
-            />
-            <Text style={styles.label}>Phone</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Phone number"
-              value={formData.phone}
-              onChangeText={(text) => setFormData({ ...formData, phone: text })}
-              keyboardType="phone-pad"
-            />
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Text style={styles.label}>Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Address"
-              value={formData.address}
-              onChangeText={(text) => setFormData({ ...formData, address: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <Modal visible={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit supplier' : 'Add supplier'}>
+        <Text style={styles.label}>Name *</Text>
+        <TextInput style={styles.input} value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder="Supplier name" />
+        <Text style={styles.label}>Contact person</Text>
+        <TextInput style={styles.input} value={form.contact_person} onChangeText={(v) => setForm({ ...form, contact_person: v })} placeholder="Contact person" />
+        <Text style={styles.label}>Phone</Text>
+        <TextInput style={styles.input} value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} placeholder="Phone number" keyboardType="phone-pad" />
+        <Text style={styles.label}>Email</Text>
+        <TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} placeholder="Email" keyboardType="email-address" autoCapitalize="none" />
+        <Text style={styles.label}>Address</Text>
+        <TextInput style={styles.input} value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} placeholder="Address" />
+        <Button title="Save supplier" loading={saving} onPress={handleSubmit} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.gray[50] },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  supplierCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  supplierInfo: {
-    marginBottom: 12,
-  },
-  supplierName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  supplierContact: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  supplierPhone: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  supplierEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  supplierAddress: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  supplierActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  editButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  deleteButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    marginTop: 8,
-  },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  actions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
+  iconBtn: { padding: spacing.xs, borderRadius: radius.sm, backgroundColor: colors.gray[100] },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
 });

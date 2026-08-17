@@ -1,23 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { ChevronRight, KeyRound, LogOut, UserCog } from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { authAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
 
 export default function SettingsScreen() {
   const { user, logout, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    old_password: '',
-    new_password: '',
-    confirm_password: '',
-  });
-  const [profileData, setProfileData] = useState({
-    business_name: '',
-    phone: '',
-    address: '',
-  });
+  const [passwordData, setPasswordData] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [profileData, setProfileData] = useState({ business_name: '', phone: '', address: '' });
 
   useEffect(() => {
     if (user) {
@@ -34,12 +31,10 @@ export default function SettingsScreen() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     if (passwordData.new_password !== passwordData.confirm_password) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-
     setLoading(true);
     try {
       await authAPI.changePassword(passwordData);
@@ -67,292 +62,104 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={typography.title}>Settings</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account Information</Text>
-        <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Account information</Text>
+        <Card>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Business Name</Text>
+            <Text style={typography.caption}>Business Name</Text>
             <Text style={styles.infoValue}>{user?.business_name || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={typography.caption}>Email</Text>
             <Text style={styles.infoValue}>{user?.email || 'N/A'}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone</Text>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <Text style={typography.caption}>Phone</Text>
             <Text style={styles.infoValue}>{user?.phone || 'Not set'}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Address</Text>
-            <Text style={styles.infoValue}>{user?.address || 'Not set'}</Text>
-          </View>
-        </View>
+        </Card>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account Actions</Text>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setShowProfileModal(true)}
-        >
-          <Text style={styles.actionButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setShowPasswordModal(true)}
-        >
-          <Text style={styles.actionButtonText}>Change Password</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Account actions</Text>
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <TouchableOpacity style={styles.actionRow} onPress={() => setShowProfileModal(true)}>
+            <UserCog size={18} color={colors.gray[500]} />
+            <Text style={styles.actionText}>Edit Profile</Text>
+            <ChevronRight size={16} color={colors.gray[300]} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.actionRow} onPress={() => setShowPasswordModal(true)}>
+            <KeyRound size={18} color={colors.gray[500]} />
+            <Text style={styles.actionText}>Change Password</Text>
+            <ChevronRight size={16} color={colors.gray[300]} />
+          </TouchableOpacity>
+        </Card>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Danger Zone</Text>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.dangerButton]}
-          onPress={() => {
-            Alert.alert(
-              'Logout',
-              'Are you sure you want to logout?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Logout',
-                  style: 'destructive',
-                  onPress: async () => {
-                    await logout();
-                  },
-                },
-              ]
-            );
-          }}
-        >
-          <Text style={styles.dangerButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <Button title="Logout" variant="danger" onPress={handleLogout} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs }}>
+          <LogOut size={12} color={colors.gray[400]} />
+        </View>
       </View>
 
-      {showPasswordModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Current Password"
-              secureTextEntry
-              value={passwordData.old_password}
-              onChangeText={(text) => setPasswordData({ ...passwordData, old_password: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="New Password"
-              secureTextEntry
-              value={passwordData.new_password}
-              onChangeText={(text) => setPasswordData({ ...passwordData, new_password: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm New Password"
-              secureTextEntry
-              value={passwordData.confirm_password}
-              onChangeText={(text) => setPasswordData({ ...passwordData, confirm_password: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowPasswordModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handlePasswordChange}
-                disabled={loading}
-              >
-                <Text style={styles.modalButtonText}>
-                  {loading ? 'Changing...' : 'Change'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <Modal visible={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Change password">
+        <TextInput style={styles.input} placeholder="Current password" secureTextEntry value={passwordData.old_password} onChangeText={(v) => setPasswordData({ ...passwordData, old_password: v })} />
+        <TextInput style={styles.input} placeholder="New password" secureTextEntry value={passwordData.new_password} onChangeText={(v) => setPasswordData({ ...passwordData, new_password: v })} />
+        <TextInput style={styles.input} placeholder="Confirm new password" secureTextEntry value={passwordData.confirm_password} onChangeText={(v) => setPasswordData({ ...passwordData, confirm_password: v })} />
+        <Button title="Change password" loading={loading} onPress={handlePasswordChange} style={{ marginTop: spacing.sm }} />
+      </Modal>
 
-      {showProfileModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Business Name"
-              value={profileData.business_name}
-              onChangeText={(text) => setProfileData({ ...profileData, business_name: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone"
-              value={profileData.phone}
-              onChangeText={(text) => setProfileData({ ...profileData, phone: text })}
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Address"
-              value={profileData.address}
-              onChangeText={(text) => setProfileData({ ...profileData, address: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowProfileModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleProfileUpdate}
-                disabled={loading}
-              >
-                <Text style={styles.modalButtonText}>
-                  {loading ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <Modal visible={showProfileModal} onClose={() => setShowProfileModal(false)} title="Edit profile">
+        <TextInput style={styles.input} placeholder="Business name" value={profileData.business_name} onChangeText={(v) => setProfileData({ ...profileData, business_name: v })} />
+        <TextInput style={styles.input} placeholder="Phone" value={profileData.phone} onChangeText={(v) => setProfileData({ ...profileData, phone: v })} keyboardType="phone-pad" />
+        <TextInput style={styles.input} placeholder="Address" value={profileData.address} onChangeText={(v) => setProfileData({ ...profileData, address: v })} />
+        <Button title="Save changes" loading={loading} onPress={handleProfileUpdate} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  header: {
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  section: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+  container: { flex: 1, backgroundColor: colors.gray[50] },
+  header: { padding: spacing.md, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray[100] },
+  section: { padding: spacing.md, paddingTop: spacing.sm },
+  sectionTitle: { fontSize: 14, fontWeight: '600', color: colors.gray[500], marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.gray[100],
   },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  actionButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionButtonText: {
-    color: '#059669',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  dangerButton: {
-    backgroundColor: '#dc2626',
-  },
-  dangerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
+  infoValue: { fontSize: 14, fontWeight: '600', color: colors.gray[900] },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+  actionText: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.gray[900] },
+  divider: { height: 1, backgroundColor: colors.gray[100] },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
+    marginBottom: spacing.sm,
   },
 });

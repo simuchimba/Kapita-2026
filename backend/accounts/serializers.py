@@ -135,7 +135,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'phone',
-            'business_name', 'currency', 'theme',
+            'business_name', 'currency', 'theme', 'logo',
         ]
 
 

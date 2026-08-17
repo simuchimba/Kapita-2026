@@ -159,7 +159,8 @@ export const authAPI = {
   },
 
   updateProfile: async (data: any) => {
-    const response = await api.put('/auth/profile/', data);
+    const isFormData = data instanceof FormData;
+    const response = await api.put('/auth/profile/', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
     return response.data;
   },
 };
@@ -629,12 +630,39 @@ export const personalFinanceAPI = {
     const response = await api.get('/personal/transactions/categories/');
     return response.data;
   },
+
+  getTypes: async () => {
+    const response = await api.get('/personal/transactions/types/');
+    return response.data;
+  },
 };
 
 // Chat API
 export const chatAPI = {
   sendMessage: async (message: string, messages: any[] = []) => {
     const response = await api.post('/chat/', { message, messages });
+    return response.data;
+  },
+
+  speechToText: async (audioUri: string) => {
+    const formData = new FormData();
+    formData.append('audio', { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' } as any);
+    const response = await api.post('/chat/stt/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
+
+// Voice Entry API
+export const voiceAPI = {
+  parse: async (transcript: string) => {
+    const response = await api.post('/voice/parse/', { transcript });
+    return response.data;
+  },
+
+  resolveProduct: async (params: { product_id: number; quantity: number; payment_method?: string | null; customer_name?: string | null }) => {
+    const response = await api.post('/voice/parse/', params);
     return response.data;
   },
 };
@@ -658,6 +686,87 @@ export const notificationsAPI = {
 
   markAllRead: async () => {
     const response = await api.post('/notifications/mark_all_read/');
+    return response.data;
+  },
+};
+
+// Invoices API
+export const invoicesAPI = {
+  list: async (params?: any) => {
+    const response = await api.get('/invoices/', { params });
+    return response.data.results ?? response.data;
+  },
+
+  getOne: async (id: number) => {
+    const response = await api.get(`/invoices/${id}/`);
+    return response.data;
+  },
+
+  create: async (data: any) => {
+    const response = await api.post('/invoices/', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: any) => {
+    const response = await api.put(`/invoices/${id}/`, data);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await api.delete(`/invoices/${id}/`);
+    return response.data;
+  },
+
+  markPaid: async (id: number, data?: any) => {
+    const response = await api.post(`/invoices/${id}/mark_paid/`, data);
+    return response.data;
+  },
+
+  send: async (id: number) => {
+    const response = await api.post(`/invoices/${id}/send/`);
+    return response.data;
+  },
+};
+
+// Currencies API
+export const currenciesAPI = {
+  list: async () => {
+    const response = await api.get('/currencies/');
+    return response.data.results ?? response.data;
+  },
+
+  getRates: async () => {
+    const response = await api.get('/currencies/rates/');
+    return response.data.results ?? response.data;
+  },
+
+  createRate: async (data: any) => {
+    const response = await api.post('/currencies/rates/', data);
+    return response.data;
+  },
+
+  deleteRate: async (id: number) => {
+    const response = await api.delete(`/currencies/rates/${id}/`);
+    return response.data;
+  },
+
+  convert: async (params: any) => {
+    const response = await api.get('/currencies/rates/convert/', { params });
+    return response.data;
+  },
+};
+
+// Backup API
+export const backupAPI = {
+  exportBackup: async () => {
+    const response = await api.get('/backup/export/', { responseType: 'arraybuffer' });
+    return response.data;
+  },
+
+  restoreBackup: async (formData: FormData) => {
+    const response = await api.post('/backup/restore/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 };

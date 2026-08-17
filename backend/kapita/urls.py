@@ -42,6 +42,7 @@ urlpatterns = [
     path('api/invoices/', include('invoices.urls')),
     path('api/backup/', include('backup.urls')),
     path('api/feedback/', include('feedback.urls')),
+    path('api/voice/', include('voice.urls')),
 ]
 
 if settings.DEBUG:

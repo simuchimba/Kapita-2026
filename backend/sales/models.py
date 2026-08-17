@@ -66,7 +66,13 @@ class Sale(models.Model):
         blank=True
     )
     due_date = models.DateField(null=True, blank=True)
-    
+
+    SOURCE_CHOICES = [
+        ('manual', 'Manual Entry'),
+        ('voice', 'Voice Entry'),
+    ]
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='manual')
+
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,9 +1,10 @@
 import { Tabs, Redirect } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../src/context/AuthContext';
+import { useAppTheme } from '../../src/context/ThemeContext';
 import { View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FeedbackBar from '../../src/components/FeedbackBar';
-import { colors } from '../../src/constants/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -13,10 +14,11 @@ function TabIcon({ name, color, size }: { name: IoniconsName; color: string; siz
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { colors, isDark } = useAppTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary[600]} />
       </View>
     );
@@ -28,14 +30,15 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1 }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.primary[600],
           tabBarInactiveTintColor: colors.gray[400],
           tabBarStyle: {
-            backgroundColor: colors.white,
-            borderTopColor: colors.gray[200],
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
             borderTopWidth: 1,
             paddingBottom: 4,
             height: 60,
@@ -88,12 +91,23 @@ export default function TabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: 'More',
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon name="ellipsis-horizontal-circle-outline" color={color} size={size} />
+            ),
+          }}
+        />
 
-        {/* Hidden tabs — navigable but not shown in bottom bar */}
+        {/* Reachable via the More tab, not shown in the bottom bar */}
         {[
           'credits', 'expenses', 'reinvestments', 'settings',
           'suppliers', 'purchase-orders', 'quotations',
           'promotions', 'billing', 'reports', 'profile',
+          'invoices', 'chat', 'personal-finance', 'outgoing-payments',
+          'currencies', 'cash-flow', 'projections', 'backup',
         ].map((name) => (
           <Tabs.Screen key={name} name={name} options={{ href: null }} />
         ))}

@@ -1,445 +1,228 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { creditsAPI, customersAPI } from '../../src/services/api';
+import Card from '../../src/components/ui/Card';
+import Button from '../../src/components/ui/Button';
+import Badge from '../../src/components/ui/Badge';
+import EmptyState from '../../src/components/ui/EmptyState';
+import Modal from '../../src/components/ui/Modal';
+import { colors, radius, spacing, typography } from '../../src/constants/theme';
+
+interface Customer { id: number; name: string; }
+interface Credit {
+  id: number;
+  customer_details?: Customer;
+  amount_owed: string | number;
+  amount_paid: string | number;
+  status: string;
+  due_date: string;
+}
+
+const EMPTY_FORM = { customer: '', amount_owed: '', due_date: '', notes: '' };
 
 export default function CreditsScreen() {
-  const [credits, setCredits] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [credits, setCredits] = useState<Credit[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState<any>(null);
-  const [newCredit, setNewCredit] = useState({ customer: '', amount_owed: '', due_date: '', notes: '' });
-  const [paymentData, setPaymentData] = useState({ amount: '', notes: '' });
+  const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [paymentAmount, setPaymentAmount] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const [creditsRes, customersRes, summaryRes] = await Promise.all([
+      const [creditsData, customersData, summaryData] = await Promise.all([
         creditsAPI.list(),
         customersAPI.list(),
         creditsAPI.getSummary(),
       ]);
-      setCredits(creditsRes.results || creditsRes);
-      setCustomers(customersRes.results || customersRes);
-      setSummary(summaryRes);
+      setCredits(creditsData || []);
+      setCustomers(customersData || []);
+      setSummary(summaryData);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load credits:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const openAddModal = () => {
+    setForm(EMPTY_FORM);
+    setShowAddModal(true);
   };
 
   const handleAddCredit = async () => {
-    if (!newCredit.customer || !newCredit.amount_owed) {
-      Alert.alert('Error', 'Please fill in required fields');
+    if (!form.customer || !form.amount_owed) {
+      Alert.alert('Missing info', 'Please select a customer and amount owed');
       return;
     }
-
+    setSaving(true);
     try {
-      await creditsAPI.create({
-        ...newCredit,
-        borrow_date: new Date().toISOString().slice(0, 10),
-      });
-      setNewCredit({ customer: '', amount_owed: '', due_date: '', notes: '' });
+      await creditsAPI.create({ ...form, borrow_date: new Date().toISOString().slice(0, 10) });
       setShowAddModal(false);
-      loadData();
-      Alert.alert('Success', 'Credit added successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add credit');
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to add credit');
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const openPayment = (credit: Credit) => {
+    setSelectedCredit(credit);
+    setPaymentAmount('');
+    setShowPaymentModal(true);
   };
 
   const handlePayment = async () => {
-    if (!paymentData.amount) {
-      Alert.alert('Error', 'Please enter payment amount');
+    if (!paymentAmount || !selectedCredit) {
+      Alert.alert('Missing info', 'Please enter a payment amount');
       return;
     }
-
+    setSaving(true);
     try {
-      await creditsAPI.recordPayment(selectedCredit.id, paymentData);
-      setPaymentData({ amount: '', notes: '' });
+      await creditsAPI.recordPayment(selectedCredit.id, { amount: paymentAmount });
       setShowPaymentModal(false);
-      loadData();
-      Alert.alert('Success', 'Payment recorded successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to record payment');
+      load();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to record payment');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Credits</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Add Credit</Text>
-          </TouchableOpacity>
+      <View style={styles.headerBar}>
+        <Text style={typography.title}>Credits</Text>
+        <Button title="Add Credit" size="sm" onPress={openAddModal} />
+      </View>
+
+      {summary && (
+        <View style={styles.summaryRow}>
+          <Card style={styles.summaryCard}>
+            <Text style={typography.caption}>Owed</Text>
+            <Text style={styles.summaryValue}>K{Number(summary.total_owed || 0).toLocaleString()}</Text>
+          </Card>
+          <Card style={styles.summaryCard}>
+            <Text style={typography.caption}>Paid</Text>
+            <Text style={[styles.summaryValue, { color: colors.primary[700] }]}>K{Number(summary.total_paid || 0).toLocaleString()}</Text>
+          </Card>
+          <Card style={styles.summaryCard}>
+            <Text style={typography.caption}>Outstanding</Text>
+            <Text style={[styles.summaryValue, { color: colors.danger }]}>K{Number(summary.total_outstanding || 0).toLocaleString()}</Text>
+          </Card>
         </View>
+      )}
 
-        {summary && (
-          <View style={styles.summaryContainer}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total Owed</Text>
-              <Text style={styles.summaryValue}>${summary.total_owed || '0.00'}</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total Paid</Text>
-              <Text style={styles.summaryValue}>${summary.total_paid || '0.00'}</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Remaining</Text>
-              <Text style={styles.summaryValue}>${summary.remaining || '0.00'}</Text>
-            </View>
-          </View>
-        )}
-
-        {credits.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No credits yet</Text>
-          </View>
-        ) : (
-          credits.map((credit) => (
-            <View key={credit.id} style={styles.creditCard}>
-              <View style={styles.creditInfo}>
-                <Text style={styles.creditCustomer}>
-                  {credit.customer_details?.name || 'N/A'}
-                </Text>
-                <Text style={styles.creditAmount}>Owed: ${credit.amount_owed}</Text>
-                <Text style={styles.creditPaid}>Paid: ${credit.amount_paid}</Text>
-                <Text style={styles.creditRemaining}>
-                  Remaining: ${(parseFloat(credit.amount_owed) - parseFloat(credit.amount_paid)).toFixed(2)}
-                </Text>
+      <FlatList
+        data={credits}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.sm, gap: spacing.sm }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary[600]} />}
+        ListEmptyComponent={!loading ? <EmptyState message="No credits yet." /> : null}
+        renderItem={({ item }) => {
+          const remaining = Number(item.amount_owed) - Number(item.amount_paid);
+          return (
+            <Card>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Text style={styles.name}>{item.customer_details?.name || 'N/A'}</Text>
+                <Badge label={item.status} tone={item.status === 'paid' ? 'green' : item.status === 'overdue' ? 'red' : 'blue'} />
               </View>
-              <TouchableOpacity
-                style={styles.paymentButton}
-                onPress={() => {
-                  setSelectedCredit(credit);
-                  setShowPaymentModal(true);
-                }}
-              >
-                <Text style={styles.paymentButtonText}>Record Payment</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      {showAddModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Credit</Text>
-            <Text style={styles.label}>Customer</Text>
-            <ScrollView style={styles.customerPicker} nestedScrollEnabled>
-              {customers.length === 0 && (
-                <Text style={styles.emptyText}>No customers yet — add one in the Customers tab first.</Text>
+              <View style={styles.metaRow}>
+                <Text style={typography.caption}>Owed K{Number(item.amount_owed).toLocaleString()}</Text>
+                <Text style={typography.caption}>Paid K{Number(item.amount_paid).toLocaleString()}</Text>
+              </View>
+              <Text style={styles.remaining}>Remaining K{remaining.toLocaleString()}</Text>
+              {item.status !== 'paid' && (
+                <Button title="Record Payment" size="sm" variant="secondary" onPress={() => openPayment(item)} style={{ marginTop: spacing.sm }} />
               )}
-              {customers.map((c) => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[styles.customerOption, newCredit.customer === String(c.id) && styles.customerOptionActive]}
-                  onPress={() => setNewCredit({ ...newCredit, customer: String(c.id) })}
-                >
-                  <Text style={newCredit.customer === String(c.id) ? styles.customerOptionTextActive : styles.customerOptionText}>
-                    {c.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Text style={styles.label}>Amount Owed</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Amount"
-              value={newCredit.amount_owed}
-              onChangeText={(text) => setNewCredit({ ...newCredit, amount_owed: text })}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.label}>Due Date (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={newCredit.due_date}
-              onChangeText={(text) => setNewCredit({ ...newCredit, due_date: text })}
-            />
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Notes"
-              value={newCredit.notes}
-              onChangeText={(text) => setNewCredit({ ...newCredit, notes: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddCredit}
-              >
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+            </Card>
+          );
+        }}
+      />
 
-      {showPaymentModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Record Payment</Text>
-            <Text style={styles.label}>Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Payment amount"
-              value={paymentData.amount}
-              onChangeText={(text) => setPaymentData({ ...paymentData, amount: text })}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Notes"
-              value={paymentData.notes}
-              onChangeText={(text) => setPaymentData({ ...paymentData, notes: text })}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowPaymentModal(false)}
+      <Modal visible={showAddModal} onClose={() => setShowAddModal(false)} title="Add credit">
+        <Text style={styles.label}>Customer *</Text>
+        <View style={styles.pickerList}>
+          {customers.length === 0 && <Text style={typography.caption}>No customers yet — add one in the Customers tab first.</Text>}
+          {customers.map((c) => (
+            <Card key={c.id} style={[styles.pickerRow, form.customer === String(c.id) && styles.pickerRowActive]}>
+              <Text
+                onPress={() => setForm({ ...form, customer: String(c.id) })}
+                style={form.customer === String(c.id) ? styles.pickerRowTextActive : styles.pickerRowText}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handlePayment}
-              >
-                <Text style={styles.modalButtonText}>Record</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                {c.name}
+              </Text>
+            </Card>
+          ))}
         </View>
-      )}
+
+        <Text style={styles.label}>Amount owed (K) *</Text>
+        <TextInput style={styles.input} value={form.amount_owed} onChangeText={(v) => setForm({ ...form, amount_owed: v })} keyboardType="decimal-pad" placeholder="0.00" />
+
+        <Text style={styles.label}>Due date (optional)</Text>
+        <TextInput style={styles.input} value={form.due_date} onChangeText={(v) => setForm({ ...form, due_date: v })} placeholder="YYYY-MM-DD" />
+
+        <Text style={styles.label}>Notes (optional)</Text>
+        <TextInput style={styles.input} value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} placeholder="Notes" />
+
+        <Button title="Save credit" loading={saving} onPress={handleAddCredit} style={{ marginTop: spacing.sm }} />
+      </Modal>
+
+      <Modal visible={showPaymentModal} onClose={() => setShowPaymentModal(false)} title={`Record payment — ${selectedCredit?.customer_details?.name || ''}`}>
+        <Text style={styles.label}>Amount (K) *</Text>
+        <TextInput style={styles.input} value={paymentAmount} onChangeText={setPaymentAmount} keyboardType="decimal-pad" placeholder="0.00" />
+        <Button title="Record payment" loading={saving} onPress={handlePayment} style={{ marginTop: spacing.sm }} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
+  container: { flex: 1, backgroundColor: colors.gray[50] },
+  headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  creditCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  creditInfo: {
-    marginBottom: 12,
-  },
-  creditCustomer: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  creditAmount: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  creditPaid: {
-    fontSize: 14,
-    color: '#059669',
-    marginTop: 4,
-  },
-  creditRemaining: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#dc2626',
-    marginTop: 4,
-  },
-  paymentButton: {
-    backgroundColor: '#059669',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  paymentButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    marginTop: 8,
-  },
+  summaryRow: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md, paddingBottom: 0 },
+  summaryCard: { flex: 1, alignItems: 'center' },
+  summaryValue: { fontSize: 16, fontWeight: '700', color: colors.gray[900], marginTop: 4 },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[900] },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  remaining: { fontSize: 16, fontWeight: '700', color: colors.danger, marginTop: spacing.xs },
+  label: { fontSize: 13, fontWeight: '600', color: colors.gray[700], marginBottom: 4, marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  customerPicker: {
-    maxHeight: 140,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  customerOption: {
-    paddingHorizontal: 12,
+    borderColor: colors.gray[200],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    fontSize: 15,
+    color: colors.gray[900],
+    backgroundColor: colors.white,
   },
-  customerOptionActive: {
-    backgroundColor: '#f0fdf4',
-  },
-  customerOptionText: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  customerOptionTextActive: {
-    fontSize: 14,
-    color: '#047857',
-    fontWeight: '600',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  saveButton: {
-    backgroundColor: '#059669',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  pickerList: { maxHeight: 150, gap: spacing.xs },
+  pickerRow: { paddingVertical: spacing.sm },
+  pickerRowActive: { backgroundColor: colors.primary[50], borderColor: colors.primary[200] },
+  pickerRowText: { fontSize: 14, color: colors.gray[700] },
+  pickerRowTextActive: { fontSize: 14, color: colors.primary[700], fontWeight: '600' },
 });

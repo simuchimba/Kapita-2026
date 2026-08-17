@@ -24,6 +24,13 @@ class Expense(models.Model):
     currency = models.CharField(max_length=3, default='ZMW')
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     date = models.DateField()
+
+    SOURCE_CHOICES = [
+        ('manual', 'Manual Entry'),
+        ('voice', 'Voice Entry'),
+    ]
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='manual')
+
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

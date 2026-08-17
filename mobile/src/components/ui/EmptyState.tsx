@@ -1,16 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, spacing } from '../../constants/theme';
+import { View, Text } from 'react-native';
+import { spacing } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function EmptyState({ message }: { message: string }) {
+  const { colors } = useAppTheme();
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.text}>{message}</Text>
+    <View style={{ paddingVertical: spacing.xl * 2, alignItems: 'center' }}>
+      <Text style={{ color: colors.gray[500], fontSize: 14 }}>{message}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { paddingVertical: spacing.xl * 2, alignItems: 'center' },
-  text: { color: colors.gray[500], fontSize: 14 },
-});
