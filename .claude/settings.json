@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo *)",
+      "Bash(sed -n '/^export const salesAPI/,/^};/p' src/services/api.ts)",
+      "Bash(sed -n '/^export const productsAPI/,/^};/p' src/services/api.ts)",
+      "Bash(sed -n '/^export const customersAPI/,/^};/p' src/services/api.ts)"
+    ]
+  }
+}
